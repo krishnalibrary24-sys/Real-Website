@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion } from "framer-motion"
 import { Marquee } from "@/components/ui/marquee"
-import Image from "next/image"
+
 
 const FAQ_DATA = [
   {
@@ -87,7 +87,7 @@ function GoogleReviewBlock({ review }: { review: any }) {
             <div className="text-[11px] text-[#70757a]">{review.time}</div>
           </div>
         </div>
-        <Image src={GOOGLE_G_LOGO} alt="Google" width={20} height={20} className="object-contain" />
+        <img src={GOOGLE_G_LOGO} alt="Google" width={20} height={20} className="object-contain" />
       </div>
       <div className="flex gap-0.5">
         {[...Array(review.rating)].map((_, i) => (

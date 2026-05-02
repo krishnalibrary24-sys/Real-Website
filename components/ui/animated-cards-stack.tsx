@@ -139,10 +139,8 @@ export const CardTransformed = React.forwardRef<
     const dy = useTransform(scrollYProgress, rotateRange, [4, 12])
     const blur = useTransform(scrollYProgress, rotateRange, [2, 24])
     const alpha = useTransform(scrollYProgress, rotateRange, [0.15, 0.2])
-    const filter =
-      variant === "light" 
-        ? useMotionTemplate`drop-shadow(${dx}px ${dy}px ${blur}px rgba(0,0,0,${alpha}))`
-        : "none"
+    const dropShadow = useMotionTemplate`drop-shadow(${dx}px ${dy}px ${blur}px rgba(0,0,0,${alpha}))`
+    const filter = variant === "light" ? dropShadow : "none"
 
     const cardStyle = {
       top: index * incrementY,
