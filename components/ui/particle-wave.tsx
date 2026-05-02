@@ -14,27 +14,13 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     renderer: THREE.WebGLRenderer;
     particles: THREE.Points;
     particleMaterial: THREE.ShaderMaterial;
-    animationId: number | null;
+    animationId: number;
     mouse: THREE.Vector2;
   } | null>(null);
 
-  // Function to detect current theme
   const getCurrentTheme = () => {
+    if (typeof document === 'undefined') return 'dark';
     return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-  };
-
-  // Function to get background color based on theme
-  const getBackgroundColor = (theme: string) => {
-    return theme === 'dark' 
-      ? new THREE.Color(0x000000) // Black background for dark theme
-      : new THREE.Color(0xffffff); // White background for light theme
-  };
-
-  // Function to get particle color based on theme
-  const getParticleColor = (theme: string) => {
-    return theme === 'dark' 
-      ? new THREE.Vector3(1.0, 1.0, 1.0) // White particles for dark theme
-      : new THREE.Vector3(0.0, 0.0, 0.0); // Black particles for light theme
   };
 
   const particleVertex = `
@@ -57,46 +43,27 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     uniform vec2 uMouse;
     void main() {
       float dist = distance(gl_FragCoord.xy, uMouse);
-      float radius = 350.0; // The light radius
+      float radius = 350.0;
       float alpha = 1.0 - smoothstep(0.0, radius, dist);
-      
-      if (alpha <= 0.02) discard; // hide particles far away
-      
+      if (alpha <= 0.02) discard;
       gl_FragColor = vec4(uColor, alpha * 0.7);
     }
   `;
 
-  const initScene = () => {
+  useEffect(() => {
     if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const winWidth = window.innerWidth;
     const winHeight = window.innerHeight;
-    const aspectRatio = winWidth / winHeight;
 
-    // Camera
-    const camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.01, 1000);
+    const camera = new THREE.PerspectiveCamera(75, winWidth / winHeight, 0.01, 1000);
     camera.position.set(0, 6, 5);
-
-    // Scene
     const scene = new THREE.Scene();
-
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: true,
-      alpha: true, // Allow transparent background so it plays well with NextThemes or our wrapper
-    });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(winWidth, winHeight);
-    
-    // Set initial background color based on theme
-    const currentTheme = getCurrentTheme();
-    // Use an incredibly dark blue for the dark theme to match the library aesthetic, instead of pure black.
-    const bgColor = currentTheme === 'dark' ? new THREE.Color(0x060e20) : new THREE.Color(0xffffff);
-    renderer.setClearColor(bgColor);
 
-    // Particles
     const gap = 0.3;
     const amountX = 200;
     const amountY = 200;
@@ -121,15 +88,15 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
     particleGeometry.setAttribute('scale', new THREE.BufferAttribute(particleScales, 1));
 
+    const currentTheme = getCurrentTheme();
     const particleMaterial = new THREE.ShaderMaterial({
       transparent: true,
       vertexShader: particleVertex,
       fragmentShader: particleFragment,
       uniforms: {
-        uTime: { type: 'f', value: 0 },
-        // Use a nice light blue/white color for the particles in dark theme
-        uColor: { type: 'v3', value: currentTheme === 'dark' ? new THREE.Vector3(0.6, 0.7, 1.0) : new THREE.Vector3(0.0, 0.0, 0.0) },
-        uMouse: { type: 'v2', value: new THREE.Vector2(-10000, -10000) }
+        uTime: { value: 0 },
+        uColor: { value: currentTheme === 'dark' ? new THREE.Vector3(0.6, 0.7, 1.0) : new THREE.Vector3(0.0, 0.0, 0.0) },
+        uMouse: { value: new THREE.Vector2(-10000, -10000) }
       }
     });
 
@@ -137,90 +104,46 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     scene.add(particles);
 
     const mouse = new THREE.Vector2(-10000, -10000);
+    let animationId: number;
 
-    sceneRef.current = {
-      scene,
-      camera,
-      renderer,
-      particles,
-      particleMaterial,
-      animationId: null,
-      mouse
+    const animate = () => {
+      animationId = requestAnimationFrame(animate);
+      particleMaterial.uniforms.uTime.value += 0.05;
+      const theme = getCurrentTheme();
+      particleMaterial.uniforms.uColor.value = theme === 'dark' ? new THREE.Vector3(0.6, 0.7, 1.0) : new THREE.Vector3(0.0, 0.0, 0.0);
+      const bgColor = theme === 'dark' ? new THREE.Color(0x060e20) : new THREE.Color(0xffffff);
+      renderer.setClearColor(bgColor);
+      camera.lookAt(scene.position);
+      renderer.render(scene, camera);
     };
-  };
 
-  const animate = () => {
-    if (!sceneRef.current) return;
-
-    const { scene, camera, renderer, particleMaterial } = sceneRef.current;
-    
-    particleMaterial.uniforms.uTime.value += 0.05;
-    
-    // Update particle color and background based on current theme
-    const currentTheme = getCurrentTheme();
-    const particleColor = currentTheme === 'dark' ? new THREE.Vector3(0.6, 0.7, 1.0) : new THREE.Vector3(0.0, 0.0, 0.0);
-    const bgColor = currentTheme === 'dark' ? new THREE.Color(0x060e20) : new THREE.Color(0xffffff);
-
-    particleMaterial.uniforms.uColor.value = particleColor;
-    particleMaterial.uniforms.uMouse.value.copy(sceneRef.current.mouse);
-    renderer.setClearColor(bgColor);
-    
-    camera.lookAt(scene.position);
-    renderer.render(scene, camera);
-    
-    sceneRef.current.animationId = requestAnimationFrame(animate);
-  };
-
-  const handleResize = () => {
-    if (!sceneRef.current) return;
-
-    const { camera, renderer } = sceneRef.current;
-    const winWidth = window.innerWidth;
-    const winHeight = window.innerHeight;
-
-    camera.aspect = winWidth / winHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(winWidth, winHeight);
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!sceneRef.current) return;
-    
-    // WebGL gl_FragCoord is in physical pixels, with Y=0 at the bottom.
-    const pixelRatio = window.devicePixelRatio;
-    sceneRef.current.mouse.x = e.clientX * pixelRatio;
-    sceneRef.current.mouse.y = (window.innerHeight - e.clientY) * pixelRatio;
-  };
-
-  useEffect(() => {
-    initScene();
     animate();
 
-    const handleResizeEvent = () => handleResize();
-    const handleMouseMoveEvent = (e: MouseEvent) => handleMouseMove(e);
+    sceneRef.current = { scene, camera, renderer, particles, particleMaterial, animationId: animationId!, mouse };
 
-    window.addEventListener('resize', handleResizeEvent);
-    window.addEventListener('mousemove', handleMouseMoveEvent);
+    const handleResize = () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const pixelRatio = window.devicePixelRatio;
+      mouse.x = e.clientX * pixelRatio;
+      mouse.y = (window.innerHeight - e.clientY) * pixelRatio;
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('mousemove', handleMouseMove);
 
     return () => {
-      if (sceneRef.current?.animationId) {
-        cancelAnimationFrame(sceneRef.current.animationId);
-      }
-      window.removeEventListener('resize', handleResizeEvent);
-      window.removeEventListener('mousemove', handleMouseMoveEvent);
-      
-      // Cleanup Three.js resources
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', handleMouseMove);
       if (sceneRef.current) {
-        const { scene, renderer, particles } = sceneRef.current;
+        cancelAnimationFrame(sceneRef.current.animationId);
         scene.remove(particles);
-        if (particles.geometry) particles.geometry.dispose();
-        if (particles.material) {
-          if (Array.isArray(particles.material)) {
-            particles.material.forEach(material => material.dispose());
-          } else {
-            particles.material.dispose();
-          }
-        }
+        particleGeometry.dispose();
+        particleMaterial.dispose();
         renderer.dispose();
       }
     };
@@ -230,12 +153,7 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     <canvas
       ref={canvasRef}
       className={`block ${className}`}
-      style={{
-        width: '100vw',
-        height: '100vh',
-        margin: 0,
-        overflow: 'hidden'
-      }}
+      style={{ width: '100vw', height: '100vh', margin: 0, overflow: 'hidden' }}
     />
   );
 };
