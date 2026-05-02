@@ -216,14 +216,15 @@ export default function Home() {
               </div>
             </motion.div>
 
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-8 leading-[0.95] tracking-tighter text-white font-manrope uppercase">
-              The <span className="text-primary italic">Zenith</span> of<br />
-              <span className="text-white/90">Deep Focus.</span>
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black mb-8 leading-[0.85] tracking-[-0.06em] text-white font-manrope uppercase">
+              A <span className="text-primary italic">Heaven</span><br />
+              for <span className="text-white/90">Curious</span><br />
+              <span className="bg-gradient-to-r from-primary via-white to-primary bg-clip-text text-transparent">Minds.</span>
             </h1>
             
-            <p className="text-white/50 text-lg md:text-xl mb-12 max-w-2xl mx-auto font-body-md leading-relaxed">
-              India's elite self-study destination. Engineered for absolute silence, 
-              unmatched connectivity, and ergonomic perfection.
+            <p className="text-white/50 text-lg md:text-2xl mb-12 max-w-3xl mx-auto font-body-md leading-relaxed tracking-tight">
+              Ambikapur's premier intellectual sanctuary. Engineered for absolute silence, 
+              unmatched connectivity, and the pursuit of excellence.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
