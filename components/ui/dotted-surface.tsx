@@ -10,13 +10,14 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 	const { theme } = useTheme();
 
 	const containerRef = useRef<HTMLDivElement>(null);
+	const requestRef = useRef<number>(0);
 	const sceneRef = useRef<{
 		scene: THREE.Scene;
 		camera: THREE.PerspectiveCamera;
 		renderer: THREE.WebGLRenderer;
-		particles: THREE.Points[];
-		animationId: number;
-		count: number;
+		particles: THREE.Points;
+		geometry: THREE.BufferGeometry;
+		material: THREE.PointsMaterial;
 	} | null>(null);
 
 	useEffect(() => {
@@ -26,7 +27,6 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 		const AMOUNTX = 40;
 		const AMOUNTY = 60;
 
-		// Scene setup
 		const scene = new THREE.Scene();
 		scene.fog = new THREE.Fog(0xffffff, 2000, 10000);
 
@@ -48,19 +48,16 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 
 		containerRef.current.appendChild(renderer.domElement);
 
-		// Create positions and colors
 		const positions: number[] = [];
 		const colors: number[] = [];
 
 		for (let ix = 0; ix < AMOUNTX; ix++) {
 			for (let iy = 0; iy < AMOUNTY; iy++) {
 				const x = ix * SEPARATION - (AMOUNTX * SEPARATION) / 2;
-				const y = 0;
 				const z = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2;
-
-				positions.push(x, y, z);
+				positions.push(x, 0, z);
 				if (theme === 'dark') {
-					colors.push(200, 200, 200);
+					colors.push(0.8, 0.8, 0.8);
 				} else {
 					colors.push(0, 0, 0);
 				}
@@ -68,10 +65,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 		}
 
 		const geometry = new THREE.BufferGeometry();
-		geometry.setAttribute(
-			'position',
-			new THREE.Float32BufferAttribute(positions, 3),
-		);
+		geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
 		geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
 		const material = new THREE.PointsMaterial({
@@ -85,27 +79,32 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 		const points = new THREE.Points(geometry, material);
 		scene.add(points);
 
+		sceneRef.current = {
+			scene,
+			camera,
+			renderer,
+			particles: points,
+			geometry,
+			material
+		};
+
 		let count = 0;
-		let animationId: number = 0;
-
 		const animate = () => {
-			animationId = requestAnimationFrame(animate);
-
-			const positionAttribute = geometry.attributes.position;
-			const posArray = positionAttribute.array as Float32Array;
+			requestRef.current = requestAnimationFrame(animate);
+			
+			const posAttr = geometry.attributes.position;
+			const posArray = posAttr.array as Float32Array;
 
 			let i = 0;
 			for (let ix = 0; ix < AMOUNTX; ix++) {
 				for (let iy = 0; iy < AMOUNTY; iy++) {
 					const index = i * 3;
-					posArray[index + 1] =
-						Math.sin((ix + count) * 0.3) * 50 +
-						Math.sin((iy + count) * 0.5) * 50;
+					posArray[index + 1] = Math.sin((ix + count) * 0.3) * 50 + Math.sin((iy + count) * 0.5) * 50;
 					i++;
 				}
 			}
 
-			positionAttribute.needsUpdate = true;
+			posAttr.needsUpdate = true;
 			renderer.render(scene, camera);
 			count += 0.1;
 		};
@@ -117,35 +116,17 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 		};
 
 		window.addEventListener('resize', handleResize);
-
-		// Start animation
 		animate();
-
-		// Store references
-		sceneRef.current = {
-			scene,
-			camera,
-			renderer,
-			particles: [points],
-			animationId,
-			count,
-		};
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			cancelAnimationFrame(requestRef.current);
+			
 			if (sceneRef.current) {
-				cancelAnimationFrame(sceneRef.current.animationId);
-				sceneRef.current.scene.traverse((object) => {
-					if (object instanceof THREE.Points) {
-						object.geometry.dispose();
-						if (Array.isArray(object.material)) {
-							object.material.forEach((m) => m.dispose());
-						} else {
-							object.material.dispose();
-						}
-					}
-				});
-				sceneRef.current.renderer.dispose();
+				scene.remove(points);
+				geometry.dispose();
+				material.dispose();
+				renderer.dispose();
 				if (containerRef.current && renderer.domElement) {
 					containerRef.current.removeChild(renderer.domElement);
 				}

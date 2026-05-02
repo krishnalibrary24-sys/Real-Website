@@ -8,13 +8,13 @@ interface ParticleWaveProps {
 
 const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const requestRef = useRef<number>(0);
   const sceneRef = useRef<{
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
     renderer: THREE.WebGLRenderer;
     particles: THREE.Points;
     particleMaterial: THREE.ShaderMaterial;
-    animationId: number;
     mouse: THREE.Vector2;
   } | null>(null);
 
@@ -54,15 +54,12 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const winWidth = window.innerWidth;
-    const winHeight = window.innerHeight;
-
-    const camera = new THREE.PerspectiveCamera(75, winWidth / winHeight, 0.01, 1000);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000);
     camera.position.set(0, 6, 5);
     const scene = new THREE.Scene();
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(winWidth, winHeight);
+    renderer.setSize(window.innerWidth, window.innerHeight);
 
     const gap = 0.3;
     const amountX = 200;
@@ -71,16 +68,16 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     const particlePositions = new Float32Array(particleNum * 3);
     const particleScales = new Float32Array(particleNum);
     
-    let i = 0;
-    let j = 0;
+    let k = 0;
+    let s = 0;
     for (let ix = 0; ix < amountX; ix++) {
       for (let iy = 0; iy < amountY; iy++) {
-        particlePositions[i] = ix * gap - ((amountX * gap) / 2);
-        particlePositions[i + 1] = 0;
-        particlePositions[i + 2] = iy * gap - ((amountX * gap) / 2);
-        particleScales[j] = 1;
-        i += 3;
-        j++;
+        particlePositions[k] = ix * gap - ((amountX * gap) / 2);
+        particlePositions[k + 1] = 0;
+        particlePositions[k + 2] = iy * gap - ((amountX * gap) / 2);
+        particleScales[s] = 1;
+        k += 3;
+        s++;
       }
     }
 
@@ -104,10 +101,9 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     scene.add(particles);
 
     const mouse = new THREE.Vector2(-10000, -10000);
-    let animationId: number;
 
     const animate = () => {
-      animationId = requestAnimationFrame(animate);
+      requestRef.current = requestAnimationFrame(animate);
       particleMaterial.uniforms.uTime.value += 0.05;
       const theme = getCurrentTheme();
       particleMaterial.uniforms.uColor.value = theme === 'dark' ? new THREE.Vector3(0.6, 0.7, 1.0) : new THREE.Vector3(0.0, 0.0, 0.0);
@@ -117,9 +113,8 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
       renderer.render(scene, camera);
     };
 
+    sceneRef.current = { scene, camera, renderer, particles, particleMaterial, mouse };
     animate();
-
-    sceneRef.current = { scene, camera, renderer, particles, particleMaterial, animationId: animationId!, mouse };
 
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -139,8 +134,8 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(requestRef.current);
       if (sceneRef.current) {
-        cancelAnimationFrame(sceneRef.current.animationId);
         scene.remove(particles);
         particleGeometry.dispose();
         particleMaterial.dispose();

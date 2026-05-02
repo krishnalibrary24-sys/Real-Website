@@ -17,20 +17,14 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
     props = ['book', 'scroll', 'globe', 'quill', 'lamp', 'trophy']
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const requestRef = useRef<number>(0);
     const sceneRef = useRef<{
         scene: THREE.Scene;
         camera: THREE.PerspectiveCamera;
         renderer: THREE.WebGLRenderer;
         objects: THREE.Object3D[];
-        animationId: number;
-        rotationSpeed: number;
-        mouseX: number;
-        mouseY: number;
-        targetRotationX: number;
-        targetRotationY: number;
     } | null>(null);
 
-    const [selectedProp, setSelectedProp] = useState<string | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
 
     const academicColors = {
@@ -89,28 +83,21 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
     useEffect(() => {
         if (!containerRef.current) return;
         const container = containerRef.current;
-        const width = container.clientWidth;
-        const height = container.clientHeight;
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
         scene.fog = new THREE.Fog(0x0a0a1a, 5, 30);
-        const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
         camera.position.set(0, 2, 10);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
-        renderer.setSize(width, height);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
         container.appendChild(renderer.domElement);
 
         scene.add(new THREE.AmbientLight(0xffffff, 0.6));
         const dLight = new THREE.DirectionalLight(0xffffff, 1);
         dLight.position.set(5, 10, 7);
-        dLight.castShadow = true;
         scene.add(dLight);
-        const pLight = new THREE.PointLight(0x4fc3f7, 1, 20);
-        pLight.position.set(-3, 3, 3);
-        scene.add(pLight);
 
         const objects: THREE.Object3D[] = [];
         const radius = 4;
@@ -134,22 +121,19 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
             }
             object.position.set(x, 0, z);
             object.rotation.y = angle;
-            object.userData = { type: propType };
             scene.add(object);
             objects.push(object);
         });
 
         const platform = new THREE.Mesh(new THREE.CylinderGeometry(radius + 2, radius + 2, 0.2, 32), new THREE.MeshStandardMaterial({ color: 0x1a1a2e, metalness: 0.2, roughness: 0.8 }));
         platform.position.y = -0.2;
-        platform.receiveShadow = true;
         scene.add(platform);
 
-        let animationId: number;
         let targetRotationX = 0;
         let targetRotationY = 0;
 
         const animate = () => {
-            animationId = requestAnimationFrame(animate);
+            requestRef.current = requestAnimationFrame(animate);
             if (autoRotate) {
                 camera.position.x = Math.sin(Date.now() * 0.0005) * 10;
                 camera.position.z = Math.cos(Date.now() * 0.0005) * 10;
@@ -167,18 +151,19 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
             renderer.render(scene, camera);
         };
 
+        sceneRef.current = { scene, camera, renderer, objects };
         animate();
-        sceneRef.current = { scene, camera, renderer, objects, animationId: animationId!, rotationSpeed: autoRotate ? 0.002 : 0, mouseX: 0, mouseY: 0, targetRotationX, targetRotationY };
         setIsInitialized(true);
 
         const handleResize = () => {
+            if (!container) return;
             camera.aspect = container.clientWidth / container.clientHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(container.clientWidth, container.clientHeight);
         };
 
         const handleMouseMove = (e: MouseEvent) => {
-            if (!interactive) return;
+            if (!interactive || !container) return;
             const rect = container.getBoundingClientRect();
             targetRotationX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
             targetRotationY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -190,11 +175,18 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
         return () => {
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('mousemove', handleMouseMove);
-            if (sceneRef.current) {
-                cancelAnimationFrame(sceneRef.current.animationId);
-                if (container && renderer.domElement) container.removeChild(renderer.domElement);
-                renderer.dispose();
-            }
+            cancelAnimationFrame(requestRef.current);
+            if (container && renderer.domElement) container.removeChild(renderer.domElement);
+            renderer.dispose();
+            objects.forEach(obj => {
+                obj.traverse(child => {
+                    if (child instanceof THREE.Mesh) {
+                        child.geometry.dispose();
+                        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                        else child.material.dispose();
+                    }
+                });
+            });
         };
     }, [interactive, autoRotate]);
 
