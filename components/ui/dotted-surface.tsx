@@ -18,9 +18,9 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 	} | null>(null);
 
 	useEffect(() => {
-		if (!containerRef.current) return;
+		const currentContainer = containerRef.current;
+		if (!currentContainer) return;
 
-		// Initialize animationId with a default value immediately to satisfy TS
 		let animationId: number = 0;
 		let count: number = 0;
 
@@ -39,7 +39,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.setClearColor(scene.fog.color, 0);
 
-		containerRef.current.appendChild(renderer.domElement);
+		currentContainer.appendChild(renderer.domElement);
 
 		const positions = new Float32Array(AMOUNTX * AMOUNTY * 3);
 		const colors = new Float32Array(AMOUNTX * AMOUNTY * 3);
@@ -50,7 +50,6 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 				positions[i * 3] = ix * SEPARATION - (AMOUNTX * SEPARATION) / 2;
 				positions[i * 3 + 1] = 0;
 				positions[i * 3 + 2] = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2;
-
 				const colorVal = theme === 'dark' ? 0.8 : 0;
 				colors[i * 3] = colorVal;
 				colors[i * 3 + 1] = colorVal;
@@ -72,14 +71,12 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 
 		const points = new THREE.Points(geometry, material);
 		scene.add(points);
-
 		sceneRef.current = { scene, renderer, points, geometry, material };
 
 		const animate = () => {
 			animationId = requestAnimationFrame(animate);
 			const posAttr = geometry.attributes.position;
 			const posArray = posAttr.array as Float32Array;
-
 			let idx = 0;
 			for (let ix = 0; ix < AMOUNTX; ix++) {
 				for (let iy = 0; iy < AMOUNTY; iy++) {
@@ -87,7 +84,6 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 					idx++;
 				}
 			}
-
 			posAttr.needsUpdate = true;
 			renderer.render(scene, camera);
 			count += 0.1;
@@ -111,8 +107,8 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 				g.dispose();
 				m.dispose();
 				r.dispose();
-				if (containerRef.current && r.domElement) {
-					containerRef.current.removeChild(r.domElement);
+				if (currentContainer && r.domElement) {
+					currentContainer.removeChild(r.domElement);
 				}
 			}
 		};

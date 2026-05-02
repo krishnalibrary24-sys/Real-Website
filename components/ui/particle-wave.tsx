@@ -23,43 +23,46 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
   };
 
-  const particleVertex = `
-    attribute float scale;
-    uniform float uTime;
-    void main() {
-      vec3 p = position;
-      float s = scale;
-      p.y += (sin(p.x + uTime) * 0.5) + (cos(p.y + uTime) * 0.1) * 2.0;
-      p.x += (sin(p.y + uTime) * 0.5);
-      s += (sin(p.x + uTime) * 0.5) + (cos(p.y + uTime) * 0.1) * 2.0;
-      vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
-      gl_PointSize = s * 15.0 * (1.0 / -mvPosition.z);
-      gl_Position = projectionMatrix * mvPosition;
-    }
-  `;
-
-  const particleFragment = `
-    uniform vec3 uColor;
-    uniform vec2 uMouse;
-    void main() {
-      float dist = distance(gl_FragCoord.xy, uMouse);
-      float radius = 350.0;
-      float alpha = 1.0 - smoothstep(0.0, radius, dist);
-      if (alpha <= 0.02) discard;
-      gl_FragColor = vec4(uColor, alpha * 0.7);
-    }
-  `;
-
   useEffect(() => {
-    if (!canvasRef.current) return;
-
     const canvas = canvasRef.current;
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000);
+    if (!canvas) return;
+
+    const particleVertex = `
+      attribute float scale;
+      uniform float uTime;
+      void main() {
+        vec3 p = position;
+        float s = scale;
+        p.y += (sin(p.x + uTime) * 0.5) + (cos(p.y + uTime) * 0.1) * 2.0;
+        p.x += (sin(p.y + uTime) * 0.5);
+        s += (sin(p.x + uTime) * 0.5) + (cos(p.y + uTime) * 0.1) * 2.0;
+        vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+        gl_PointSize = s * 15.0 * (1.0 / -mvPosition.z);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `;
+
+    const particleFragment = `
+      uniform vec3 uColor;
+      uniform vec2 uMouse;
+      void main() {
+        float dist = distance(gl_FragCoord.xy, uMouse);
+        float radius = 350.0;
+        float alpha = 1.0 - smoothstep(0.0, radius, dist);
+        if (alpha <= 0.02) discard;
+        gl_FragColor = vec4(uColor, alpha * 0.7);
+      }
+    `;
+
+    const winWidth = window.innerWidth;
+    const winHeight = window.innerHeight;
+
+    const camera = new THREE.PerspectiveCamera(75, winWidth / winHeight, 0.01, 1000);
     camera.position.set(0, 6, 5);
     const scene = new THREE.Scene();
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(winWidth, winHeight);
 
     const gap = 0.3;
     const amountX = 200;
@@ -85,14 +88,14 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
     particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
     particleGeometry.setAttribute('scale', new THREE.BufferAttribute(particleScales, 1));
 
-    const currentTheme = getCurrentTheme();
+    const initialTheme = getCurrentTheme();
     const particleMaterial = new THREE.ShaderMaterial({
       transparent: true,
       vertexShader: particleVertex,
       fragmentShader: particleFragment,
       uniforms: {
         uTime: { value: 0 },
-        uColor: { value: currentTheme === 'dark' ? new THREE.Vector3(0.6, 0.7, 1.0) : new THREE.Vector3(0.0, 0.0, 0.0) },
+        uColor: { value: initialTheme === 'dark' ? new THREE.Vector3(0.6, 0.7, 1.0) : new THREE.Vector3(0.0, 0.0, 0.0) },
         uMouse: { value: new THREE.Vector2(-10000, -10000) }
       }
     });

@@ -6,6 +6,7 @@ import { motion, useInView, animate, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { KrishnaTestimonials } from "@/components/ui/krishna-testimonials";
 import ParallaxMouseBackground from "@/components/ui/parallax-mouse-background";
+import Image from "next/image";
 
 const TABS = [
   { id: 'home', label: 'Home' },
@@ -30,7 +31,7 @@ function Counter({ value, suffix = "" }: { value: number, suffix?: string }) {
     if (isInView) {
       const controls = animate(0, value, {
         duration: 2.5,
-        ease: [0.33, 1, 0.68, 1], // Custom power ease
+        ease: [0.33, 1, 0.68, 1],
         onUpdate: (latest) => setDisplayValue(Math.floor(latest))
       });
       return () => controls.stop();
@@ -127,7 +128,6 @@ export default function Home() {
     <div className="font-body-md text-body-md overflow-x-hidden relative">
       <ParallaxMouseBackground className="fixed inset-0 z-[-1]" intensity={0.15} />
       
-      {/* Custom Cursor Glow */}
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
         <motion.div 
            className="w-[800px] h-[800px] bg-primary/[0.04] rounded-full blur-[150px] absolute"
@@ -146,7 +146,6 @@ export default function Home() {
         });
       `}} />
 
-      {/* TopAppBar */}
       <header className="fixed top-0 w-full z-50 rounded-b-xl bg-surface-container/60 backdrop-blur-xl border-b border-white/5 shadow-2xl">
         <div className="flex justify-between items-center max-w-7xl mx-auto px-8 h-20">
           <Link href="/" className="flex items-center gap-3 group">
@@ -179,10 +178,15 @@ export default function Home() {
       </header>
 
       <main className="mt-20">
-        {/* Hero Section */}
         <section id="home" className="relative min-h-[85vh] flex items-center justify-center overflow-hidden px-8 pt-20">
           <div className="absolute inset-0 z-0">
-            <img className="w-full h-full object-cover opacity-30 grayscale contrast-125" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtxjNxGHLOjBsdywPQrFwaveRKrIIr65H8mKncDNKBhdDzQqo0vUe8nQc6UtizQVgi7__BHzHxONmUtCO2zBcK2aPmS4621lEhqdtv4aABqvG5wYdR3pYXhTtKrjC2Qe2finfXcwYWp6zh6RyZNxNAyPHkdE4FJ6rQbot-yFZGpQyWmPSMCUYs8gSIw0dcVzB7OUiFmPu3ZGbV9id_DSJ8K3mjexqiWdyT8K7LO4ChNrAHUUEQ4LGzBwTrOBdBdUu6fD4KcIJNsw" alt="Zen Workspace" />
+            <Image 
+              src="/assets/exterior.jpg"
+              alt="Zen Workspace" 
+              fill
+              className="object-cover opacity-30 grayscale contrast-125"
+              priority
+            />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#060e20]/80 to-[#060e20]"></div>
           </div>
           
@@ -192,7 +196,6 @@ export default function Home() {
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
             className="relative z-10 text-center max-w-5xl mx-auto"
           >
-            {/* X-Factor: 4.9 Star Badge */}
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -223,7 +226,7 @@ export default function Home() {
             </h1>
             
             <p className="text-white/50 text-lg md:text-2xl mb-12 max-w-3xl mx-auto font-body-md leading-relaxed tracking-tight">
-              Ambikapur's premier intellectual sanctuary. Engineered for absolute silence, 
+              Ambikapur&apos;s premier intellectual sanctuary. Engineered for absolute silence, 
               unmatched connectivity, and the pursuit of excellence.
             </p>
             
@@ -238,7 +241,6 @@ export default function Home() {
           </motion.div>
         </section>
 
-        {/* Stats Pulse */}
         <section className="py-32 max-w-7xl mx-auto px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <motion.div whileHover={{ y: -5 }} className="glass-pane p-10 rounded-[32px] text-center border-t border-white/10 relative overflow-hidden group">
@@ -270,7 +272,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Branch Section */}
         <section id="branches" className="py-32">
           <div className="max-w-7xl mx-auto px-8">
             <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
@@ -284,10 +285,9 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-              {/* Branch 1 */}
               <div className="group relative">
                 <div className="aspect-[16/10] overflow-hidden rounded-[40px] border border-white/5 relative">
-                  <img className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbMh8x8j5Byq6FVqFfReev-jJ1VIsxwwqc94VV3Q-eogACMe1ixCLeK2tGLd3s3WRLwvWPMDXAFZbxS0XzfPJmGWwKfy6mJMw-8Zd7byzirQz15EjTuO8j36ggzmX01Onjkn62kfB02eZ--ZFLERPHFwofKk49aOcsqslLzic5s3GQ3fhAINPDNbCzvTAvV57zUZJT6mPKYodGwZOacOi7A3NP3AdqcxOWdtfLqdhLyytgVDCO91KoBxg6XstIH_C0mXPTJeRUSw" alt="Bengali Chowk" />
+                  <Image fill className="object-cover transition-transform duration-1000 group-hover:scale-110" src="/assets/exterior.jpg" alt="Bengali Chowk" />
                   <div className="absolute top-8 right-8 bg-[#060e20]/80 backdrop-blur-md px-5 py-2 rounded-2xl border border-white/10 flex items-center gap-3">
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]" />
                     <span className="text-white font-black text-xs uppercase tracking-widest">{occupancy['bengali-chowk']}% Full</span>
@@ -309,10 +309,9 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Branch 2 */}
               <div className="group relative">
                 <div className="aspect-[16/10] overflow-hidden rounded-[40px] border border-white/5 relative">
-                  <img className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSiRIu70Nm5O3-J20NAnk_UM6f3cezodxbrO4MSXkIoG0drTUxA46lJ2ptUcx-DyE5CvOK87KkF9oeHIa9A3rFe3mgKiiJuS4C-YepmUeZt1er0qFlF4z-W5fSbfIU2a5batadhVlhdjCueRurGHsw9wgTZrAsTApkOSFRFmNy_ZEb--K4A2p9WRyZn1GFA4oxifCQICkng82CGZ04PGo_ShHlh7QCx9mkYZIhrQ-tj0OhyL5fZls3S9_2HIWeyWxhnduA0F8vdg" alt="Namnakala" />
+                  <Image fill className="object-cover transition-transform duration-1000 group-hover:scale-110" src="/assets/exterior.jpg" alt="Namnakala" />
                   <div className="absolute top-8 right-8 bg-[#060e20]/80 backdrop-blur-md px-5 py-2 rounded-2xl border border-white/10 flex items-center gap-3">
                     <span className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_#66b2ff]" />
                     <span className="text-white font-black text-xs uppercase tracking-widest">{occupancy['namnakala']}% Full</span>
@@ -337,7 +336,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Gallery */}
         <section id="gallery" className="py-32 bg-white/[0.01]">
           <div className="max-w-7xl mx-auto px-8 text-center mb-20">
             <h2 className="text-4xl md:text-6xl font-black text-white mb-6 uppercase tracking-tighter font-manrope">
@@ -380,13 +378,13 @@ export default function Home() {
                  onClick={() => setSelectedImage(item)}
                  className="overflow-hidden rounded-[32px] h-[300px] md:h-[400px] relative group border border-white/5 shadow-2xl cursor-pointer"
                >
-                  <img 
+                  <Image 
                     src={`/assets/${item.img}`} 
                     alt={item.area} 
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-110 group-hover:scale-100" 
+                    fill
+                    className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-110 group-hover:scale-100" 
                   />
                   
-                  {/* Area Label Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#060e20] via-[#060e20]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
                     <motion.div 
                       initial={{ y: 10, opacity: 0 }}
@@ -397,8 +395,6 @@ export default function Home() {
                       <h4 className="text-xl font-black text-white uppercase tracking-tighter font-manrope italic">{item.area}</h4>
                     </motion.div>
                   </div>
-
-                  {/* Glass frame effect on hover */}
                   <div className="absolute inset-4 border border-white/10 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                </motion.div>
              ))}
@@ -409,7 +405,6 @@ export default function Home() {
           <KrishnaTestimonials />
         </section>
 
-        {/* Final Enquiry */}
         <section id="enquiry" className="py-32 relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 blur-[150px] rounded-full pointer-events-none" />
           <div className="max-w-4xl mx-auto px-8 relative z-10">
@@ -453,7 +448,6 @@ export default function Home() {
         </section>
       </main>
 
-      {/* Elite Footer */}
       <footer className="bg-[#040a18] w-full py-20 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-12">
@@ -474,7 +468,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Full-screen Gallery Lightbox */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div 
@@ -492,10 +485,11 @@ export default function Home() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative w-full h-full max-h-[80vh] overflow-hidden rounded-[40px] border border-white/10 shadow-2xl">
-                <img 
+                <Image 
                   src={`/assets/${selectedImage.img}`} 
                   alt={selectedImage.area} 
-                  className="w-full h-full object-contain"
+                  fill
+                  className="object-contain"
                 />
               </div>
               

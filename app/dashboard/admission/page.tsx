@@ -21,30 +21,29 @@ export default function AdmissionPage() {
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Generate or fetch ID logic
   useEffect(() => {
+    const checkExistingMember = async (phone: string) => {
+      const { data } = await supabase.from('members').select('*').eq('mobile', phone).maybeSingle();
+      if (data) {
+        setFullName(data.full_name || "");
+        setFatherName(data.father_name || "");
+        setDob(data.dob ? data.dob.split('T')[0] : "");
+        setGender(data.gender || "");
+        setAddress(data.address || "");
+        setPermanentId(data.permanent_id || "");
+        setRecordFound(true);
+      } else {
+        setRecordFound(false);
+        setPermanentId("");
+      }
+    };
+
     if (mobile.replace(/[^0-9]/g, '').length >= 10) {
       checkExistingMember(mobile);
     } else {
       setRecordFound(false);
     }
   }, [mobile]);
-
-  const checkExistingMember = async (phone: string) => {
-    const { data, error } = await supabase.from('members').select('*').eq('mobile', phone).maybeSingle();
-    if (data) {
-      setFullName(data.full_name || "");
-      setFatherName(data.father_name || "");
-      setDob(data.dob ? data.dob.split('T')[0] : ""); // assuming date format
-      setGender(data.gender || "");
-      setAddress(data.address || "");
-      setPermanentId(data.permanent_id || "");
-      setRecordFound(true);
-    } else {
-      setRecordFound(false);
-      setPermanentId("");
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +52,6 @@ export default function AdmissionPage() {
     try {
       let finalId = permanentId;
       
-      // If new student, generate ID
       if (!recordFound) {
         const branchCode = activeBranch === 'namnakala' ? 'N' : 'B';
         const prefix = `#KL26${branchCode}`;
@@ -67,7 +65,6 @@ export default function AdmissionPage() {
         if (allIds && allIds.length > 0) {
           allIds.forEach(record => {
             if (record.permanent_id) {
-              // Extract the numbers after the prefix
               const suffix = record.permanent_id.replace(prefix, '');
               const num = parseInt(suffix);
               if (!isNaN(num) && num > maxSeq) maxSeq = num;
@@ -88,7 +85,7 @@ export default function AdmissionPage() {
         mobile: mobile,
         address: address,
         branch: activeBranch,
-        seat_no: null, // Seat assigned later via Seat Map
+        seat_no: null,
         shift: shift,
         plan_amount: shift === 'Full Day' ? 1000 : 600,
         is_active: true,
@@ -107,12 +104,10 @@ export default function AdmissionPage() {
       setErrorMsg(null);
       setTimeout(() => {
         setSuccess(false);
-        // Reset form
         setMobile(""); setFullName(""); setFatherName(""); setDob(""); setGender(""); setAddress("");
       }, 3000);
 
     } catch (err: any) {
-      console.error("Admission Error:", err);
       setErrorMsg(err.message || "An unknown database error occurred.");
       setSuccess(false);
     } finally {
@@ -151,7 +146,6 @@ export default function AdmissionPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Identity Section */}
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-wider">
               <span className="material-symbols-outlined">badge</span> Identity Details
@@ -176,7 +170,7 @@ export default function AdmissionPage() {
                 <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full bg-surface-container-highest/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary/50" placeholder="e.g. Rahul Sharma" />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-label-caps text-on-surface-variant uppercase">Father's Name</label>
+                <label className="text-xs font-label-caps text-on-surface-variant uppercase">Father&apos;s Name</label>
                 <input type="text" value={fatherName} onChange={(e) => setFatherName(e.target.value)} className="w-full bg-surface-container-highest/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary/50" placeholder="Required for records" />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -201,7 +195,6 @@ export default function AdmissionPage() {
             </div>
           </div>
 
-          {/* Seating & Plan Section */}
           <div className="space-y-4 pt-6 border-t border-white/5">
             <h3 className="text-sm font-bold text-tertiary flex items-center gap-2 uppercase tracking-wider">
               <span className="material-symbols-outlined">event_seat</span> Shift Assignment
@@ -225,7 +218,6 @@ export default function AdmissionPage() {
             </div>
           </div>
 
-          {/* Document Upload */}
           <div className="space-y-4 pt-6 border-t border-white/5">
             <h3 className="text-sm font-bold text-secondary flex items-center gap-2 uppercase tracking-wider">
               <span className="material-symbols-outlined">upload_file</span> Documents (Optional)

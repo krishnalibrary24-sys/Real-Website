@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 
 interface Academic3DProps {
@@ -27,7 +27,7 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
 
     const [isInitialized, setIsInitialized] = useState(false);
 
-    const academicColors = {
+    const academicColors = React.useMemo(() => ({
         book: 0x1a237e,
         scroll: 0x5d4037,
         globe: 0x0277bd,
@@ -35,9 +35,9 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
         lamp: 0xffb300,
         trophy: 0xffd600,
         default: 0x3949ab
-    };
+    }), []);
 
-    const createPropGeometry = (type: string): THREE.BufferGeometry | THREE.Group => {
+    const createPropGeometry = useCallback((type: string): THREE.BufferGeometry | THREE.Group => {
         switch (type) {
             case 'book': return new THREE.BoxGeometry(2, 0.3, 1.5);
             case 'scroll': return new THREE.CylinderGeometry(0.1, 0.1, 2, 8);
@@ -78,21 +78,21 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
                 return trophyGroup;
             default: return new THREE.BoxGeometry(1, 1, 1);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        if (!containerRef.current) return;
-        const container = containerRef.current;
+        const currentContainer = containerRef.current;
+        if (!currentContainer) return;
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
         scene.fog = new THREE.Fog(0x0a0a1a, 5, 30);
-        const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(50, currentContainer.clientWidth / currentContainer.clientHeight, 0.1, 1000);
         camera.position.set(0, 2, 10);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setSize(currentContainer.clientWidth, currentContainer.clientHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
+        currentContainer.appendChild(renderer.domElement);
 
         scene.add(new THREE.AmbientLight(0xffffff, 0.6));
         const dLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -132,8 +132,8 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
         let targetRotationX = 0;
         let targetRotationY = 0;
 
-        const animate = () => {
-            requestRef.current = requestAnimationFrame(animate);
+        const animateLoop = () => {
+            requestRef.current = requestAnimationFrame(animateLoop);
             if (autoRotate) {
                 camera.position.x = Math.sin(Date.now() * 0.0005) * 10;
                 camera.position.z = Math.cos(Date.now() * 0.0005) * 10;
@@ -152,19 +152,19 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
         };
 
         sceneRef.current = { scene, camera, renderer, objects };
-        animate();
+        animateLoop();
         setIsInitialized(true);
 
         const handleResize = () => {
-            if (!container) return;
-            camera.aspect = container.clientWidth / container.clientHeight;
+            if (!currentContainer) return;
+            camera.aspect = currentContainer.clientWidth / currentContainer.clientHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setSize(currentContainer.clientWidth, currentContainer.clientHeight);
         };
 
         const handleMouseMove = (e: MouseEvent) => {
-            if (!interactive || !container) return;
-            const rect = container.getBoundingClientRect();
+            if (!interactive || !currentContainer) return;
+            const rect = currentContainer.getBoundingClientRect();
             targetRotationX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
             targetRotationY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
         };
@@ -175,8 +175,8 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
         return () => {
             window.removeEventListener('resize', handleResize);
             window.removeEventListener('mousemove', handleMouseMove);
-            cancelAnimationFrame(requestRef.current);
-            if (container && renderer.domElement) container.removeChild(renderer.domElement);
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+            if (currentContainer && renderer.domElement) currentContainer.removeChild(renderer.domElement);
             renderer.dispose();
             objects.forEach(obj => {
                 obj.traverse(child => {
@@ -188,7 +188,7 @@ const Academic3DProps: React.FC<Academic3DProps> = ({
                 });
             });
         };
-    }, [interactive, autoRotate]);
+    }, [interactive, autoRotate, props, academicColors, createPropGeometry]);
 
     return (
         <div className={`relative ${className}`}>

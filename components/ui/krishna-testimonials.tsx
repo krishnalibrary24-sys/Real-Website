@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { Marquee } from "@/components/ui/marquee"
+import Image from "next/image"
 
 const FAQ_DATA = [
   {
@@ -29,7 +30,7 @@ const FAQ_DATA = [
   {
     question: "Social Zone",
     fullQuestion: "Is there a designated area for discussions or meals?",
-    answer: "Yes, we feature a professionally integrated Discussion Hall and Lunch Area. This allows students to collaborate on group projects or take refreshment breaks without disturbing the main study zones.",
+    answer: "Yes, we feature a professionally integrated Discussion Hall and Lunch Area. This allows students to collaborate on group projects or take refreshment breaks without disturbing the silence of the main study zones.",
     icon: "groups",
     color: "text-green-400"
   },
@@ -86,7 +87,7 @@ function GoogleReviewBlock({ review }: { review: any }) {
             <div className="text-[11px] text-[#70757a]">{review.time}</div>
           </div>
         </div>
-        <img src={GOOGLE_G_LOGO} alt="Google" className="w-5 h-5 object-contain" />
+        <Image src={GOOGLE_G_LOGO} alt="Google" width={20} height={20} className="object-contain" />
       </div>
       <div className="flex gap-0.5">
         {[...Array(review.rating)].map((_, i) => (
@@ -101,11 +102,8 @@ function GoogleReviewBlock({ review }: { review: any }) {
 }
 
 export function KrishnaTestimonials() {
-  const [hoveredIdx, setHoveredIdx] = React.useState<number | null>(null);
-
   return (
     <section className="relative overflow-hidden bg-[#060e20] py-32 px-8">
-      {/* Dynamic Background Glows */}
       <div className="pointer-events-none absolute top-0 left-1/4 w-[400px] h-[400px] bg-primary/10 blur-[150px] rounded-full" />
       <div className="pointer-events-none absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-tertiary/5 blur-[150px] rounded-full" />
 
@@ -118,14 +116,13 @@ export function KrishnaTestimonials() {
           >
             crown
           </motion.span>
-          <h2 className="text-5xl md:text-7xl font-black text-white uppercase tracking-[ -0.05em] font-manrope leading-[0.9]">
+          <h2 className="text-5xl md:text-7xl font-black text-white uppercase tracking-[-0.05em] font-manrope leading-[0.9]">
             Got <span className="text-primary italic">Questions?</span><br />
             We have <span className="text-white/40">Answers.</span>
           </h2>
         </div>
       </div>
 
-      {/* Tier-1 Bento FAQ Grid */}
       <div className="max-w-7xl mx-auto relative z-10 mb-32">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {FAQ_DATA.map((item, idx) => (
@@ -135,11 +132,8 @@ export function KrishnaTestimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
-              onMouseEnter={() => setHoveredIdx(idx)}
-              onMouseLeave={() => setHoveredIdx(null)}
               className="group glass-pane p-8 rounded-[32px] border border-white/5 hover:border-primary/30 transition-all duration-500 flex flex-col h-full relative overflow-hidden"
             >
-              {/* Animated Accent Background */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
               <div className={`w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500`}>
@@ -163,7 +157,6 @@ export function KrishnaTestimonials() {
             </motion.div>
           ))}
 
-          {/* WhatsApp Contact Card */}
           <motion.a
             href={WHATSAPP_LINK}
             target="_blank"
@@ -189,7 +182,6 @@ export function KrishnaTestimonials() {
         </div>
       </div>
 
-      {/* Google Maps Marquee Trail */}
       <div className="relative z-20">
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-4 px-6 py-3 rounded-full bg-white/5 border border-white/5">

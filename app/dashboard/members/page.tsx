@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useBranch } from "@/components/branch-context";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from 'next/navigation';
@@ -15,21 +15,21 @@ export default function MembersPage() {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchMembers = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('members')
-        .select('*')
-        .eq('branch', activeBranch)
-        .order('created_at', { ascending: false });
-      
-      if (data) setMembers(data);
-      setLoading(false);
-    };
-
-    fetchMembers();
+  const fetchMembers = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from('members')
+      .select('*')
+      .eq('branch', activeBranch)
+      .order('created_at', { ascending: false });
+    
+    if (data) setMembers(data);
+    setLoading(false);
   }, [activeBranch]);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
 
   const filteredMembers = members.filter(m => 
     m.full_name.toLowerCase().includes(search.toLowerCase()) || 
@@ -67,10 +67,8 @@ export default function MembersPage() {
     setSelectedMember({ ...member, subscription_end_date: newEnd.toISOString(), is_active: true });
     setIsActionLoading(false);
     
-    // Auto-generate Invoice & Print
     window.open(`/dashboard/invoice?id=${member.id}`, '_blank');
 
-    // Trigger WhatsApp Bot Notification
     const mobile = member.mobile.replace(/[^0-9]/g, '');
     const dateStr = newEnd.toLocaleDateString();
     const msg = `Dear ${member.full_name},\n\nThank you for choosing Krishna Library! Your subscription has been successfully renewed.\n\nAmount Paid: ₹${member.plan_amount}\nValid Till: ${dateStr}\n\nWe have emailed your invoice or you can collect the physical copy at the reception.\n\nRegards,\nKrishna Library (${member.branch})`;
@@ -109,7 +107,6 @@ export default function MembersPage() {
           </div>
         )}
         
-        {/* Desktop Table View */}
         <div className="hidden md:block flex-1 overflow-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-surface-container sticky top-0 z-10 text-on-surface-variant text-xs uppercase tracking-wider font-semibold">
@@ -174,7 +171,6 @@ export default function MembersPage() {
           </table>
         </div>
 
-        {/* Mobile Profile Cards View */}
         <div className="md:hidden flex-1 overflow-auto p-4 space-y-4">
           {filteredMembers.map((member) => (
             <div key={member.id} onClick={() => setSelectedMember(member)} className="bg-surface-container-low border border-white/5 p-4 rounded-2xl cursor-pointer">
@@ -213,7 +209,6 @@ export default function MembersPage() {
         </div>
       </div>
 
-      {/* Deep-Dive Profile Modal */}
       {selectedMember && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedMember(null)}>
           <div className="glass-pane border border-white/10 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
@@ -243,7 +238,7 @@ export default function MembersPage() {
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <div className="text-[10px] text-on-surface-variant uppercase font-bold">Father's Name</div>
+                      <div className="text-[10px] text-on-surface-variant uppercase font-bold">Father&apos;s Name</div>
                       <div className="text-white">{selectedMember.father_name || 'N/A'}</div>
                     </div>
                     <div>
