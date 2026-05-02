@@ -127,8 +127,8 @@ const ParticleWave: React.FC<ParticleWaveProps> = ({ className = '' }) => {
 
     const handleMouseMove = (e: MouseEvent) => {
       const pixelRatio = window.devicePixelRatio;
-      mouse.x = e.clientX * pixelRatio;
-      mouse.y = (window.innerHeight - e.clientY) * pixelRatio;
+      particleMaterial.uniforms.uMouse.value.x = e.clientX * pixelRatio;
+      particleMaterial.uniforms.uMouse.value.y = (window.innerHeight - e.clientY) * pixelRatio;
     };
 
     window.addEventListener('resize', handleResize);
