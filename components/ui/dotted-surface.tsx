@@ -138,6 +138,13 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 
 		window.addEventListener('resize', handleResize);
 
+		// Store references
+		let animationId: number;
+		const animate = () => {
+			animationId = requestAnimationFrame(animate);
+			render();
+		};
+
 		// Start animation
 		animate();
 
@@ -147,7 +154,7 @@ export function DottedSurface({ className, ...props }: DottedSurfaceProps) {
 			camera,
 			renderer,
 			particles: [points],
-			animationId,
+			animationId: animationId!,
 			count,
 		};
 
