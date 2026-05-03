@@ -76,7 +76,7 @@ const GOOGLE_G_LOGO = "https://www.gstatic.com/images/branding/product/1x/google
 
 function GoogleReviewBlock({ review }: { review: any }) {
   return (
-    <div className="bg-white text-black p-5 rounded-xl shadow-sm border border-gray-100 w-[300px] flex flex-col gap-3 shrink-0 select-none">
+    <div className="bg-white text-black p-5 rounded-xl shadow-sm w-[300px] flex flex-col gap-3 shrink-0 select-none">
       <div className="flex justify-between items-start">
         <div className="flex gap-3">
           <div className="w-10 h-10 rounded-full bg-[#f1f3f4] flex items-center justify-center font-bold text-[#5f6368] text-lg uppercase">
@@ -103,7 +103,7 @@ function GoogleReviewBlock({ review }: { review: any }) {
 
 export function KrishnaTestimonials() {
   return (
-    <section className="relative overflow-hidden bg-[#060e20] py-32 px-8">
+    <section className="relative overflow-hidden bg-transparent py-32 px-8">
       <div className="pointer-events-none absolute top-0 left-1/4 w-[400px] h-[400px] bg-primary/10 blur-[150px] rounded-full" />
       <div className="pointer-events-none absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-tertiary/5 blur-[150px] rounded-full" />
 
@@ -132,7 +132,7 @@ export function KrishnaTestimonials() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
-              className="group glass-pane p-8 rounded-[32px] border border-white/5 hover:border-primary/30 transition-all duration-500 flex flex-col h-full relative overflow-hidden"
+              className="group glass-pane p-8 rounded-[32px] transition-all duration-500 flex flex-col h-full relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
@@ -184,7 +184,7 @@ export function KrishnaTestimonials() {
 
       <div className="relative z-20">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-4 px-6 py-3 rounded-full bg-white/5 border border-white/5">
+          <div className="inline-flex items-center gap-4 px-6 py-3 rounded-full bg-white/5">
             <div className="flex gap-0.5">
                {[...Array(5)].map((_, i) => (
                  <span key={i} className="material-symbols-outlined text-[#fbbc04] text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
@@ -194,8 +194,8 @@ export function KrishnaTestimonials() {
           </div>
         </div>
         
-        <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-[#060e20] via-[#060e20]/80 to-transparent z-30 pointer-events-none"></div>
-        <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-[#060e20] via-[#060e20]/80 to-transparent z-30 pointer-events-none"></div>
+        <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-transparent to-transparent z-30 pointer-events-none"></div>
+        <div className="absolute inset-y-0 right-0 w-40 bg-gradient-to-l from-transparent to-transparent z-30 pointer-events-none"></div>
         
         <div className="space-y-8">
           <Marquee className="[--duration:50s] gap-8" pauseOnHover>

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BranchProvider, useBranch } from "@/components/branch-context";
+import { BouncingBalls } from "@/components/ui/bouncing-balls";
 
 function DashboardInner({ children, role }: { children: React.ReactNode, role: string }) {
   const pathname = usePathname();
@@ -29,6 +30,14 @@ function DashboardInner({ children, role }: { children: React.ReactNode, role: s
 
   return (
     <div className="min-h-screen bg-surface flex flex-col md:flex-row text-foreground font-body-md overflow-hidden relative">
+      <BouncingBalls 
+        numBalls={25} 
+        colors={["#bfc2ff", "#ffffff"]} 
+        opacity={0.15} 
+        minRadius={0.5} 
+        maxRadius={2.5}
+        speed={0.4}
+      />
       {/* Background Gradient */}
       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary-container/20 via-surface to-background pointer-events-none z-[-1]"></div>
 

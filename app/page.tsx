@@ -2,10 +2,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Loader } from "@/components/loader";
 import Link from "next/link";
-import { motion, useInView, animate, AnimatePresence } from "framer-motion";
+import { motion, useInView, animate, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { KrishnaTestimonials } from "@/components/ui/krishna-testimonials";
-import ParallaxMouseBackground from "@/components/ui/parallax-mouse-background";
+import BranchShowcase from "@/components/ui/branch-showcase";
+import { BouncingBalls } from "@/components/ui/bouncing-balls";
+import { Sparkles } from "lucide-react";
 import Image from "next/image";
 
 const TABS = [
@@ -42,6 +44,7 @@ function Counter({ value, suffix = "" }: { value: number, suffix?: string }) {
 }
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [focusHours, setFocusHours] = useState(12450);
   const [activeStudents, setActiveStudents] = useState(0);
@@ -49,6 +52,18 @@ export default function Home() {
   const [occupancy, setOccupancy] = useState({ 'bengali-chowk': 0, 'namnakala': 0 });
   const [activeTab, setActiveTab] = useState('home');
   const [selectedImage, setSelectedImage] = useState<{img: string, area: string} | null>(null);
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const smoothX = useSpring(mouseX, { damping: 40, stiffness: 300, mass: 0.5 });
+  const smoothY = useSpring(mouseY, { damping: 40, stiffness: 300, mass: 0.5 });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      mouseX.set(window.innerWidth / 2);
+      mouseY.set(window.innerHeight / 2);
+    }
+  }, [mouseX, mouseY]);
 
   const [enquiryForm, setEnquiryForm] = useState({ name: '', phone: '', interest: 'Full Day' });
   const [enquiryStatus, setEnquiryStatus] = useState('');
@@ -73,6 +88,12 @@ export default function Home() {
   };
 
   useEffect(() => {
+    setMounted(true);
+    // Safety timeout: Ensure loading screen disappears after 3.5 seconds regardless of DB status
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 3500);
+
     async function fetchStats() {
       try {
         const { data: members, error } = await supabase.from('members').select('branch, is_active');
@@ -94,9 +115,11 @@ export default function Home() {
         console.error("Stats error:", err);
       } finally {
         setLoading(false);
+        clearTimeout(timeout);
       }
     }
     fetchStats();
+    return () => clearTimeout(timeout);
   }, []);
 
   useEffect(() => {
@@ -111,48 +134,72 @@ export default function Home() {
       });
       setActiveTab(currentTab);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#060e20] flex flex-col items-center justify-center space-y-8">
-        <Loader />
-        <h2 className="text-2xl font-semibold text-primary font-manrope animate-pulse">Initializing Premium Workspace...</h2>
-      </div>
-    );
-  }
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX);
+      mouseY.set(e.clientY);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [mouseX, mouseY]);
 
   return (
-    <div className="font-body-md text-body-md overflow-x-hidden relative">
-      <ParallaxMouseBackground className="fixed inset-0 z-[-1]" intensity={0.15} />
-      
-      <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
-        <motion.div 
-           className="w-[800px] h-[800px] bg-primary/[0.04] rounded-full blur-[150px] absolute"
-           style={{
-             left: 'var(--mouse-x, 50%)',
-             top: 'var(--mouse-y, 50%)',
-             transform: 'translate(-50%, -50%)',
-           }}
+    <div className="font-body-md text-body-md overflow-x-hidden relative" suppressHydrationWarning>
+      {mounted && (
+        <BouncingBalls 
+          numBalls={40} 
+          colors={["#bfc2ff", "#e9c400", "#ffffff", "#4951c3"]} 
+          opacity={0.3} 
+          minRadius={1} 
+          maxRadius={4}
+          speed={0.8}
+          interactive={true}
         />
-      </div>
+      )}
+      <AnimatePresence mode="wait">
+        {mounted && loading && (
+          <motion.div 
+            key="loader-overlay"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="fixed inset-0 z-[9999] bg-[#060e20] flex flex-col items-center justify-center space-y-8"
+          >
+            <Loader />
+            <h2 className="text-2xl font-semibold text-primary font-manrope animate-pulse uppercase tracking-[0.2em]">Preparing Workspace...</h2>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <script dangerouslySetInnerHTML={{ __html: `
-        window.addEventListener('mousemove', (e) => {
-          document.documentElement.style.setProperty('--mouse-x', e.clientX + 'px');
-          document.documentElement.style.setProperty('--mouse-y', e.clientY + 'px');
-        });
-      `}} />
+      {mounted && (
+        <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+          <motion.div 
+             className="w-[800px] h-[800px] bg-primary/[0.05] rounded-full blur-[150px] absolute"
+             style={{
+               x: smoothX,
+               y: smoothY,
+               translateX: "-50%",
+               translateY: "-50%",
+               left: 0,
+               top: 0
+             }}
+          />
+        </div>
+      )}
 
-      <header className="fixed top-0 w-full z-50 rounded-b-xl bg-surface-container/60 backdrop-blur-xl border-b border-white/5 shadow-2xl">
+      <header className="fixed top-0 w-full z-50 rounded-b-xl bg-surface-container/60 backdrop-blur-xl shadow-2xl">
         <div className="flex justify-between items-center max-w-7xl mx-auto px-8 h-20">
           <Link href="/" className="flex items-center gap-3 group">
             <span className="material-symbols-outlined text-primary text-3xl group-hover:scale-110 transition-transform">local_library</span>
             <span className="text-2xl font-bold tracking-tighter text-white uppercase font-manrope hidden sm:block">Krishna Library</span>
           </Link>
-          <nav className="hidden md:flex gap-1 items-center relative bg-white/[0.03] p-1 rounded-full border border-white/5">
+          <nav className="hidden md:flex gap-1 items-center relative bg-white/[0.03] p-1 rounded-full">
             {TABS.map((tab) => (
               <a
                 key={tab.id}
@@ -163,7 +210,7 @@ export default function Home() {
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="nav-indicator"
-                    className="absolute inset-0 bg-primary/20 rounded-full border border-primary/30"
+                    className="absolute inset-0 bg-primary/20 rounded-full"
                     transition={{ type: "spring", stiffness: 350, damping: 30 }}
                   />
                 )}
@@ -187,7 +234,7 @@ export default function Home() {
               className="object-cover opacity-30 grayscale contrast-125"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#060e20]/80 to-[#060e20]"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-transparent"></div>
           </div>
           
           <motion.div 
@@ -209,7 +256,7 @@ export default function Home() {
               >
                 crown
               </motion.span>
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 px-8 py-3 rounded-2xl flex items-center gap-4 mt-2 shadow-2xl">
+              <div className="bg-white/5 backdrop-blur-xl px-8 py-3 rounded-2xl flex items-center gap-4 mt-2 shadow-2xl">
                 <div className="flex gap-1">
                   {[...Array(5)].map((_, i) => (
                     <span key={i} className="material-symbols-outlined text-[#fbbc04] text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
@@ -234,7 +281,7 @@ export default function Home() {
               <a href="#enquiry" className="bg-primary text-on-primary px-12 py-5 rounded-2xl text-lg font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_40px_rgba(102,178,255,0.3)]">
                 Secure Your Seat
               </a>
-              <a href="#gallery" className="glass-pane text-white px-12 py-5 rounded-2xl text-lg font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/10">
+              <a href="#gallery" className="glass-pane text-white px-12 py-5 rounded-2xl text-lg font-black uppercase tracking-widest hover:bg-white/10 transition-all">
                 Explore Space
               </a>
             </div>
@@ -243,7 +290,13 @@ export default function Home() {
 
         <section className="py-32 max-w-7xl mx-auto px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <motion.div whileHover={{ y: -5 }} className="glass-pane p-10 rounded-[32px] text-center border-t border-white/10 relative overflow-hidden group">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -5 }} 
+              className="glass-pane p-10 rounded-[32px] text-center relative overflow-hidden group"
+            >
               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <span className="material-symbols-outlined text-primary text-6xl mb-6 block">timer</span>
               <div className="text-5xl font-black text-white mb-2 font-manrope">
@@ -252,7 +305,14 @@ export default function Home() {
               <div className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Hours of Productivity</div>
             </motion.div>
             
-            <motion.div whileHover={{ y: -5 }} className="glass-pane p-10 rounded-[32px] text-center border-t border-white/10 relative overflow-hidden group">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              whileHover={{ y: -5 }} 
+              className="glass-pane p-10 rounded-[32px] text-center relative overflow-hidden group"
+            >
               <div className="absolute inset-0 bg-tertiary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <span className="material-symbols-outlined text-tertiary text-6xl mb-6 block">hub</span>
               <div className="text-5xl font-black text-white mb-2 font-manrope">
@@ -261,7 +321,14 @@ export default function Home() {
               <div className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Active Scholars Today</div>
             </motion.div>
             
-            <motion.div whileHover={{ y: -5 }} className="glass-pane p-10 rounded-[32px] text-center border-t border-white/10 relative overflow-hidden group border-primary/20">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              whileHover={{ y: -5 }} 
+              className="glass-pane p-10 rounded-[32px] text-center relative overflow-hidden group"
+            >
               <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
               <span className="material-symbols-outlined text-white text-6xl mb-6 block">event_seat</span>
               <div className="text-5xl font-black text-white mb-2 font-manrope">
@@ -272,90 +339,41 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="branches" className="py-32">
-          <div className="max-w-7xl mx-auto px-8">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
+        <motion.section 
+          id="branches" 
+          className="py-32"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 1 }}
+        >
+          <div className="max-w-7xl mx-auto px-8 mb-20">
+            <div className="flex flex-col md:flex-row justify-between items-end gap-8">
               <div className="max-w-2xl text-left">
                 <h2 className="text-4xl md:text-6xl font-black text-white mb-6 uppercase tracking-tighter font-manrope leading-[0.9]">Our Premium<br /><span className="text-primary">Establishments.</span></h2>
                 <p className="text-white/50 text-lg">Two elite locations in Ambikapur, meticulously designed for silence and success.</p>
               </div>
-              <div className="bg-white/5 px-6 py-3 rounded-2xl border border-white/5 font-black uppercase tracking-widest text-[10px] text-primary">
+              <div className="bg-white/5 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] text-primary">
                 Live Status: Online
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-              <div className="group relative">
-                <div className="aspect-[16/10] overflow-hidden rounded-[40px] border border-white/5 relative">
-                  <Image fill className="object-cover transition-transform duration-1000 group-hover:scale-110" src="/assets/exterior.jpg" alt="Bengali Chowk" />
-                  <div className="absolute top-8 right-8 bg-[#060e20]/80 backdrop-blur-md px-5 py-2 rounded-2xl border border-white/10 flex items-center gap-3">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]" />
-                    <span className="text-white font-black text-xs uppercase tracking-widest">{occupancy['bengali-chowk']}% Full</span>
-                  </div>
-                </div>
-                <div className="mt-10 px-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-3xl font-black text-white font-manrope uppercase italic">Bengali Chowk</h3>
-                    <span className="text-[10px] font-black text-primary border border-primary/20 px-3 py-1 rounded-full uppercase">Flagship Hub</span>
-                  </div>
-                  <p className="text-white/40 mb-8 flex items-start gap-3">
-                    <span className="material-symbols-outlined text-primary mt-1">location_on</span>
-                    Plot 12, Bengali Chowk Area, Ambikapur.
-                  </p>
-                  <div className="flex gap-4">
-                    <a href="#gallery" className="flex-1 bg-white/5 py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all border border-white/5 text-center">Gallery</a>
-                    <a href="#enquiry" className="flex-1 bg-primary py-5 rounded-2xl font-black uppercase tracking-widest text-xs text-on-primary shadow-xl hover:scale-105 transition-all text-center">Book Now</a>
-                  </div>
-                </div>
-              </div>
-
-              <div className="group relative">
-                <div className="aspect-[16/10] overflow-hidden rounded-[40px] border border-white/5 relative">
-                  <Image fill className="object-cover transition-transform duration-1000 group-hover:scale-110" src="/assets/exterior.jpg" alt="Namnakala" />
-                  <div className="absolute top-8 right-8 bg-[#060e20]/80 backdrop-blur-md px-5 py-2 rounded-2xl border border-white/10 flex items-center gap-3">
-                    <span className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_#66b2ff]" />
-                    <span className="text-white font-black text-xs uppercase tracking-widest">{occupancy['namnakala']}% Full</span>
-                  </div>
-                </div>
-                <div className="mt-10 px-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-3xl font-black text-white font-manrope uppercase italic">Namnakala</h3>
-                    <span className="text-[10px] font-black text-tertiary border border-tertiary/20 px-3 py-1 rounded-full uppercase">Central Wing</span>
-                  </div>
-                  <p className="text-white/40 mb-8 flex items-start gap-3">
-                    <span className="material-symbols-outlined text-tertiary mt-1">location_on</span>
-                    2nd Floor, Zenith Plaza, Namnakala, Ambikapur.
-                  </p>
-                  <div className="flex gap-4">
-                    <a href="#gallery" className="flex-1 bg-white/5 py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/10 transition-all border border-white/5 text-center">Gallery</a>
-                    <a href="#enquiry" className="flex-1 bg-tertiary py-5 rounded-2xl font-black uppercase tracking-widest text-xs text-white shadow-xl hover:scale-105 transition-all text-center">Waitlist</a>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
-        </section>
+          <BranchShowcase occupancy={occupancy} />
+        </motion.section>
 
-        <section id="gallery" className="py-32 bg-white/[0.01]">
+        <section id="gallery" className="py-32">
           <div className="max-w-7xl mx-auto px-8 text-center mb-20">
             <h2 className="text-4xl md:text-6xl font-black text-white mb-6 uppercase tracking-tighter font-manrope">
               The Interior<br />
               <span className="text-[#fbbc04] italic relative inline-block drop-shadow-[0_0_15px_rgba(251,188,4,0.4)]">
                 Perspective.
-                <motion.span 
-                  animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5], rotate: [0, 45, 90] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="material-symbols-outlined absolute -top-4 -right-8 text-2xl"
-                >
-                  auto_awesome
-                </motion.span>
-                <motion.span 
+                <motion.div 
                   animate={{ opacity: [0, 1, 0], scale: [0.8, 1.5, 0.8] }}
                   transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-                  className="material-symbols-outlined absolute -bottom-2 -left-10 text-xl"
+                  className="absolute -bottom-2 -left-10 text-[#fbbc04]"
                 >
-                  sparkles
-                </motion.span>
+                  <Sparkles size={24} />
+                </motion.div>
               </span>
             </h2>
           </div>
@@ -376,7 +394,7 @@ export default function Home() {
                  transition={{ delay: i * 0.1 }}
                  key={item.img} 
                  onClick={() => setSelectedImage(item)}
-                 className="overflow-hidden rounded-[32px] h-[300px] md:h-[400px] relative group border border-white/5 shadow-2xl cursor-pointer"
+                 className="overflow-hidden rounded-[32px] h-[300px] md:h-[400px] relative group shadow-2xl cursor-pointer"
                >
                   <Image 
                     src={`/assets/${item.img}`} 
@@ -395,7 +413,7 @@ export default function Home() {
                       <h4 className="text-xl font-black text-white uppercase tracking-tighter font-manrope italic">{item.area}</h4>
                     </motion.div>
                   </div>
-                  <div className="absolute inset-4 border border-white/10 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                  <div className="absolute inset-4 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                </motion.div>
              ))}
           </div>
@@ -407,27 +425,33 @@ export default function Home() {
 
         <section id="enquiry" className="py-32 relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 blur-[150px] rounded-full pointer-events-none" />
-          <div className="max-w-4xl mx-auto px-8 relative z-10">
-             <div className="glass-pane p-16 rounded-[48px] border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
+          <motion.div 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-4xl mx-auto px-8 relative z-10"
+          >
+             <div className="glass-pane p-16 rounded-[48px] shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
                 <div className="text-center mb-12">
                   <h2 className="text-5xl font-black text-white mb-4 uppercase tracking-tighter font-manrope italic">Reserve Your Space</h2>
                   <p className="text-white/40 text-lg">Leave your contact details and our registrar will contact you within 4 hours.</p>
                 </div>
-                <form onSubmit={handleEnquirySubmit} className="space-y-8">
+                <form onSubmit={handleEnquirySubmit} className="space-y-6 relative" suppressHydrationWarning>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="space-y-3">
                         <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">Full Name</label>
-                        <input type="text" placeholder="John Doe" required className="w-full bg-white/5 p-6 rounded-2xl text-white outline-none border border-white/5 focus:border-primary/40 focus:bg-white/[0.08] transition-all placeholder:text-white/10 font-bold" value={enquiryForm.name} onChange={e => setEnquiryForm({...enquiryForm, name: e.target.value})} />
+                        <input type="text" placeholder="John Doe" required className="w-full bg-white/5 p-6 rounded-2xl text-white outline-none focus:bg-white/[0.08] transition-all placeholder:text-white/10 font-bold" value={enquiryForm.name} onChange={e => setEnquiryForm({...enquiryForm, name: e.target.value})} />
                       </div>
                       <div className="space-y-3">
                         <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">Contact Number</label>
-                        <input type="tel" placeholder="+91" required className="w-full bg-white/5 p-6 rounded-2xl text-white outline-none border border-white/5 focus:border-primary/40 focus:bg-white/[0.08] transition-all placeholder:text-white/10 font-bold" value={enquiryForm.phone} onChange={e => setEnquiryForm({...enquiryForm, phone: e.target.value})} />
+                        <input type="tel" placeholder="+91" required className="w-full bg-white/5 p-6 rounded-2xl text-white outline-none focus:bg-white/[0.08] transition-all placeholder:text-white/10 font-bold" value={enquiryForm.phone} onChange={e => setEnquiryForm({...enquiryForm, phone: e.target.value})} />
                       </div>
                    </div>
                    <div className="space-y-3">
                      <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">Preferred Shift</label>
                      <div className="relative">
-                       <select className="w-full bg-white/5 p-6 rounded-2xl text-white outline-none border border-white/5 focus:border-primary/40 focus:bg-white/[0.08] transition-all appearance-none cursor-pointer font-bold" value={enquiryForm.interest} onChange={e => setEnquiryForm({...enquiryForm, interest: e.target.value})}>
+                       <select className="w-full bg-white/5 p-6 rounded-2xl text-white outline-none focus:bg-white/[0.08] transition-all appearance-none cursor-pointer font-bold" value={enquiryForm.interest} onChange={e => setEnquiryForm({...enquiryForm, interest: e.target.value})}>
                          <option value="Full Day" className="bg-[#060e20] text-white">Full Day Access (Elite)</option>
                          <option value="Half Day" className="bg-[#060e20] text-white">Half Day Batch</option>
                          <option value="Night Shift" className="bg-[#060e20] text-white">Late Night Access</option>
@@ -440,15 +464,15 @@ export default function Home() {
                       {enquiryStatus === 'submitting' ? "Transmitting..." : "Send Application"}
                       <span className="material-symbols-outlined text-sm">north_east</span>
                    </button>
-                   {enquiryStatus === 'success' && <div className="bg-green-500/10 border border-green-500/20 text-green-400 p-6 rounded-2xl text-center mt-6 font-bold uppercase tracking-widest text-xs italic animate-pulse">Application sent successfully. Welcome to the elite circle.</div>}
-                   {enquiryStatus === 'error' && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-6 rounded-2xl text-center mt-6 font-bold uppercase tracking-widest text-xs italic">Transmission failed. Please check connection.</div>}
+                   {enquiryStatus === 'success' && <div className="bg-green-500/10 text-green-400 p-6 rounded-2xl text-center mt-6 font-bold uppercase tracking-widest text-xs italic animate-pulse">Application sent successfully. Welcome to the elite circle.</div>}
+                   {enquiryStatus === 'error' && <div className="bg-red-500/10 text-red-400 p-6 rounded-2xl text-center mt-6 font-bold uppercase tracking-widest text-xs italic">Transmission failed. Please check connection.</div>}
                 </form>
              </div>
-          </div>
+          </motion.div>
         </section>
       </main>
 
-      <footer className="bg-[#040a18] w-full py-20 border-t border-white/5">
+      <footer className="w-full py-20">
         <div className="max-w-7xl mx-auto px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-12">
             <div className="text-center md:text-left">
@@ -484,7 +508,7 @@ export default function Home() {
               className="relative max-w-7xl w-full h-full flex flex-col items-center justify-center gap-8"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative w-full h-full max-h-[80vh] overflow-hidden rounded-[40px] border border-white/10 shadow-2xl">
+              <div className="relative w-full h-full max-h-[80vh] overflow-hidden rounded-[40px] shadow-2xl">
                 <Image 
                   src={`/assets/${selectedImage.img}`} 
                   alt={selectedImage.area} 
@@ -502,7 +526,7 @@ export default function Home() {
 
               <button 
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-0 right-0 md:-top-12 md:-right-12 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all group"
+                className="absolute top-0 right-0 md:-top-12 md:-right-12 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all group"
               >
                 <span className="material-symbols-outlined text-white/50 group-hover:text-white group-hover:rotate-90 transition-all">close</span>
               </button>
