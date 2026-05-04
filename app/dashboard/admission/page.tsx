@@ -115,130 +115,170 @@ export default function AdmissionPage() {
     }
   };
 
+  const planAmount = shift === 'Full Day' ? '₹1,000' : '₹600';
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div>
-        <h1 className="text-3xl font-bold font-manrope text-white mb-2">Admission Portal</h1>
-        <p className="text-on-surface-variant font-body-md">Register new members for {branchName} Branch</p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Admission Portal</h1>
+          <p className="page-subtitle">Register new members for {branchName} Branch</p>
+        </div>
+        {recordFound && (
+          <span className="badge badge-success text-xs py-1.5 px-3">
+            <span className="material-symbols-outlined text-sm">verified</span>
+            Existing Record Found
+          </span>
+        )}
       </div>
       
-      <div className="glass-pane p-8 rounded-3xl border border-white/5 max-w-4xl mx-auto mt-10">
-        <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
-          <h2 className="text-xl text-white font-bold">New Member Registration</h2>
-          {recordFound && (
-            <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-lg text-sm font-bold flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">verified</span>
-              Record Found: Auto-filled
-            </span>
-          )}
+      <div className="glass-pane-elevated !p-0 max-w-4xl mx-auto overflow-hidden">
+        {/* Form Header */}
+        <div className="px-6 md:px-8 py-5 border-b border-white/[0.06] bg-white/[0.02] flex justify-between items-center">
+          <div>
+            <h2 className="text-base font-bold text-white font-manrope">Member Registration</h2>
+            <p className="text-xs text-on-surface-variant mt-0.5">Fill in the details below to register a new member</p>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-on-surface-variant">Plan Amount</div>
+            <div className="text-lg font-bold text-primary">{planAmount}<span className="text-xs text-on-surface-variant font-normal">/mo</span></div>
+          </div>
         </div>
         
-        {success && (
-          <div className="bg-green-500/20 border border-green-500/30 text-green-400 p-4 rounded-xl mb-6 text-center font-bold">
-            Admission Successful! Member ID: {permanentId}
-          </div>
-        )}
+        <div className="p-6 md:p-8">
+          {/* Status Messages */}
+          {success && (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl mb-6 text-center font-medium flex items-center justify-center gap-2 animate-fade-in-fast">
+              <span className="material-symbols-outlined text-lg">check_circle</span>
+              Admission Successful! Member ID: <span className="font-bold">{permanentId}</span>
+            </div>
+          )}
 
-        {errorMsg && (
-          <div className="bg-error/20 border border-error/30 text-error p-4 rounded-xl mb-6 text-center font-bold">
-            Failed to save: {errorMsg}
-          </div>
-        )}
+          {errorMsg && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-center font-medium flex items-center justify-center gap-2 animate-fade-in-fast">
+              <span className="material-symbols-outlined text-lg">error</span>
+              {errorMsg}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-wider">
-              <span className="material-symbols-outlined">badge</span> Identity Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-label-caps text-on-surface-variant uppercase">Mobile Number (Primary Key)</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-white/40">phone</span>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Identity Section */}
+            <div className="space-y-5">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="material-symbols-outlined text-primary text-base">badge</span>
+                <h3 className="text-xs font-bold text-primary uppercase tracking-widest">Identity Details</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <FormField label="Mobile Number" icon="phone" required>
                   <input 
-                    type="tel" 
-                    required
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
-                    className={`w-full bg-surface-container-highest/50 border rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none transition-colors ${recordFound ? 'border-green-500/50 focus:border-green-500' : 'border-white/10 focus:border-primary/50'}`}
+                    type="tel" required value={mobile} onChange={(e) => setMobile(e.target.value)}
+                    className={`input-premium !pl-11 ${recordFound ? 'input-success' : ''}`}
                     placeholder="+91 00000 00000" 
                   />
+                </FormField>
+                <FormField label="Full Name" required>
+                  <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-premium" placeholder="e.g. Rahul Sharma" />
+                </FormField>
+                <FormField label="Father's Name">
+                  <input type="text" value={fatherName} onChange={(e) => setFatherName(e.target.value)} className="input-premium" placeholder="Required for records" />
+                </FormField>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Date of Birth">
+                    <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="input-premium" />
+                  </FormField>
+                  <FormField label="Gender">
+                    <select value={gender} onChange={(e) => setGender(e.target.value)} className="input-premium appearance-none">
+                      <option value="">Select</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </FormField>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-label-caps text-on-surface-variant uppercase">Full Name</label>
-                <input required type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full bg-surface-container-highest/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary/50" placeholder="e.g. Rahul Sharma" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-label-caps text-on-surface-variant uppercase">Father&apos;s Name</label>
-                <input type="text" value={fatherName} onChange={(e) => setFatherName(e.target.value)} className="w-full bg-surface-container-highest/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary/50" placeholder="Required for records" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-label-caps text-on-surface-variant uppercase">DOB</label>
-                  <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="w-full bg-surface-container-highest/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary/50" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-label-caps text-on-surface-variant uppercase">Gender</label>
-                  <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full bg-surface-container-highest/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary/50 appearance-none">
-                    <option value="">Select</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-xs font-label-caps text-on-surface-variant uppercase">Permanent Address</label>
-                <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className="w-full bg-surface-container-highest/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary/50" placeholder="Full residential address" />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-6 border-t border-white/5">
-            <h3 className="text-sm font-bold text-tertiary flex items-center gap-2 uppercase tracking-wider">
-              <span className="material-symbols-outlined">event_seat</span> Shift Assignment
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-label-caps text-on-surface-variant uppercase">Shift Selection</label>
-                <select required value={shift} onChange={(e) => setShift(e.target.value)} className="w-full bg-surface-container-highest/50 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary/50 appearance-none">
-                  <option value="Full Day">Full Day (7 AM - 10 PM) - ₹1000</option>
-                  <option value="Morning">Morning (7 AM - 3 PM) - ₹600</option>
-                  <option value="Evening">Evening (3 PM - 10 PM) - ₹600</option>
-                </select>
-              </div>
-              <div className="space-y-2 flex flex-col justify-center">
-                <label className="text-xs font-label-caps text-on-surface-variant uppercase">Seat Assignment</label>
-                <div className="text-sm font-bold text-tertiary mt-2">
-                  <span className="material-symbols-outlined align-middle mr-1 text-[16px]">info</span>
-                  Seat allotment is handled directly from the Seat Map module.
+                <div className="md:col-span-2">
+                  <FormField label="Address">
+                    <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className="input-premium" placeholder="Full residential address" />
+                  </FormField>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-4 pt-6 border-t border-white/5">
-            <h3 className="text-sm font-bold text-secondary flex items-center gap-2 uppercase tracking-wider">
-              <span className="material-symbols-outlined">upload_file</span> Documents (Optional)
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center hover:bg-white/5 cursor-pointer transition-colors">
-                <span className="material-symbols-outlined text-3xl text-on-surface-variant mb-2">add_a_photo</span>
-                <div className="text-sm text-white font-bold">Upload Profile Photo</div>
+            {/* Shift Section */}
+            <div className="space-y-5 pt-6 border-t border-white/[0.06]">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="material-symbols-outlined text-tertiary text-base">schedule</span>
+                <h3 className="text-xs font-bold text-tertiary uppercase tracking-widest">Shift Assignment</h3>
               </div>
-              <div className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center hover:bg-white/5 cursor-pointer transition-colors">
-                <span className="material-symbols-outlined text-3xl text-on-surface-variant mb-2">id_card</span>
-                <div className="text-sm text-white font-bold">Upload Aadhar / ID Proof</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {[
+                  { value: 'Full Day', label: 'Full Day', time: '7 AM – 10 PM', price: '₹1,000' },
+                  { value: 'Morning', label: 'Morning', time: '7 AM – 3 PM', price: '₹600' },
+                  { value: 'Evening', label: 'Evening', time: '3 PM – 10 PM', price: '₹600' },
+                ].map(option => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setShift(option.value)}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                      shift === option.value
+                        ? 'bg-primary/10 border-primary/30 shadow-[0_0_16px_rgba(191,194,255,0.08)]'
+                        : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <span className={`text-sm font-bold ${shift === option.value ? 'text-primary' : 'text-white'}`}>{option.label}</span>
+                      <span className={`text-xs font-bold ${shift === option.value ? 'text-primary' : 'text-on-surface-variant'}`}>{option.price}</span>
+                    </div>
+                    <span className="text-xs text-on-surface-variant">{option.time}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-start gap-2 text-xs text-on-surface-variant bg-white/[0.02] border border-white/[0.04] rounded-lg p-3">
+                <span className="material-symbols-outlined text-sm text-tertiary mt-0.5">info</span>
+                <span>Seat allotment is handled from the Seat Map module after admission.</span>
               </div>
             </div>
-          </div>
 
-          <button disabled={isSubmitting} type="submit" className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold glow-blue mt-8 flex justify-center items-center gap-2 disabled:opacity-50">
-            {isSubmitting ? <span className="material-symbols-outlined animate-spin">sync</span> : null}
-            {isSubmitting ? "Processing..." : recordFound ? "Re-Activate & Update Member" : "Complete Admission & Generate ID"}
-          </button>
-        </form>
+            {/* Documents Section */}
+            <div className="space-y-5 pt-6 border-t border-white/[0.06]">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="material-symbols-outlined text-secondary text-base">upload_file</span>
+                <h3 className="text-xs font-bold text-secondary uppercase tracking-widest">Documents (Optional)</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="border border-dashed border-white/10 rounded-xl p-5 text-center hover:bg-white/[0.02] hover:border-white/20 cursor-pointer transition-all group">
+                  <span className="material-symbols-outlined text-2xl text-on-surface-variant/50 mb-2 group-hover:text-on-surface-variant transition-colors">add_a_photo</span>
+                  <div className="text-xs text-white/60 font-medium group-hover:text-white/80 transition-colors">Upload Profile Photo</div>
+                </div>
+                <div className="border border-dashed border-white/10 rounded-xl p-5 text-center hover:bg-white/[0.02] hover:border-white/20 cursor-pointer transition-all group">
+                  <span className="material-symbols-outlined text-2xl text-on-surface-variant/50 mb-2 group-hover:text-on-surface-variant transition-colors">id_card</span>
+                  <div className="text-xs text-white/60 font-medium group-hover:text-white/80 transition-colors">Upload ID Proof</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button disabled={isSubmitting} type="submit" className="w-full btn-primary py-4 mt-4 flex justify-center items-center gap-2 disabled:opacity-50">
+              {isSubmitting ? <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span> : null}
+              {isSubmitting ? "Processing..." : recordFound ? "Re-Activate & Update Member" : "Complete Admission"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormField({ label, icon, required, children }: { label: string; icon?: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block pl-0.5">
+        {label} {required && <span className="text-red-400/60">*</span>}
+      </label>
+      <div className="relative">
+        {icon && <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-lg">{icon}</span>}
+        {children}
       </div>
     </div>
   );

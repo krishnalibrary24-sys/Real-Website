@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Loader } from "@/components/loader";
 import Link from "next/link";
-import { motion, useInView, animate, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
+import { motion, useInView, animate, AnimatePresence, useMotionValue, useSpring, useScroll, useTransform } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { KrishnaTestimonials } from "@/components/ui/krishna-testimonials";
 import BranchShowcase from "@/components/ui/branch-showcase";
 import { BouncingBalls } from "@/components/ui/bouncing-balls";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight, ShieldCheck, Zap, Award } from "lucide-react";
 import Image from "next/image";
+import ThemeSwitch from "@/components/ui/theme-switch";
 
 const TABS = [
   { id: 'home', label: 'Home' },
@@ -53,6 +54,12 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedImage, setSelectedImage] = useState<{img: string, area: string} | null>(null);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const smoothX = useSpring(mouseX, { damping: 40, stiffness: 300, mass: 0.5 });
@@ -65,7 +72,7 @@ export default function Home() {
     }
   }, [mouseX, mouseY]);
 
-  const [enquiryForm, setEnquiryForm] = useState({ name: '', phone: '', interest: 'Full Day' });
+  const [enquiryForm, setEnquiryForm] = useState({ name: '', phone: '', interest: 'Full Day', branch: 'bengali-chowk' });
   const [enquiryStatus, setEnquiryStatus] = useState('');
 
   const handleEnquirySubmit = async (e: React.FormEvent) => {
@@ -76,11 +83,12 @@ export default function Home() {
          full_name: enquiryForm.name,
          phone: enquiryForm.phone,
          interest: enquiryForm.interest,
+         branch: enquiryForm.branch,
          created_at: new Date().toISOString()
       }]);
       if (error) throw error;
       setEnquiryStatus('success');
-      setEnquiryForm({ name: '', phone: '', interest: 'Full Day' });
+      setEnquiryForm({ name: '', phone: '', interest: 'Full Day', branch: 'bengali-chowk' });
     } catch (error: any) {
       console.error('Enquiry error:', error);
       setEnquiryStatus('error');
@@ -89,7 +97,6 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    // Safety timeout: Ensure loading screen disappears after 3.5 seconds regardless of DB status
     const timeout = setTimeout(() => {
       setLoading(false);
     }, 3500);
@@ -125,7 +132,7 @@ export default function Home() {
   useEffect(() => {
     const handleScroll = () => {
       const sections = TABS.map(tab => document.getElementById(tab.id));
-      const scrollPosition = window.scrollY + 250;
+      const scrollPosition = window.scrollY + 350;
       let currentTab = 'home';
       sections.forEach(section => {
         if (section && section.offsetTop <= scrollPosition) {
@@ -150,37 +157,17 @@ export default function Home() {
   }, [mouseX, mouseY]);
 
   return (
-    <div className="font-body-md text-body-md overflow-x-hidden relative" suppressHydrationWarning>
-      {mounted && (
-        <BouncingBalls 
-          numBalls={40} 
-          colors={["#bfc2ff", "#e9c400", "#ffffff", "#4951c3"]} 
-          opacity={0.3} 
-          minRadius={1} 
-          maxRadius={4}
-          speed={0.8}
-          interactive={true}
-        />
-      )}
-      <AnimatePresence mode="wait">
-        {mounted && loading && (
+    <div ref={containerRef} className="selection:bg-primary/30 selection:text-white overflow-x-hidden relative" suppressHydrationWarning>
+      
+      {/* ─── Infinity Flow Background System ─── */}
+      <div className="global-infinity-bg" />
+      <div className="global-noise" />
+      
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        {/* Cursor Glow — Preserved Animation */}
+        {mounted && (
           <motion.div 
-            key="loader-overlay"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="fixed inset-0 z-[9999] bg-[#060e20] flex flex-col items-center justify-center space-y-8"
-          >
-            <Loader />
-            <h2 className="text-2xl font-semibold text-primary font-manrope animate-pulse uppercase tracking-[0.2em]">Preparing Workspace...</h2>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {mounted && (
-        <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
-          <motion.div 
-             className="w-[800px] h-[800px] bg-primary/[0.05] rounded-full blur-[150px] absolute"
+             className="w-[800px] h-[800px] bg-primary/[0.04] rounded-full blur-[150px] absolute"
              style={{
                x: smoothX,
                y: smoothY,
@@ -190,350 +177,411 @@ export default function Home() {
                top: 0
              }}
           />
-        </div>
+        )}
+      </div>
+
+      {mounted && (
+        <BouncingBalls 
+          numBalls={30} 
+          colors={["#bfc2ff", "#e9c400", "#ffffff"]} 
+          opacity={0.12} 
+          minRadius={1} 
+          maxRadius={3}
+          speed={0.4}
+          interactive={true}
+        />
       )}
 
-      <header className="fixed top-0 w-full z-50 rounded-b-xl bg-surface-container/60 backdrop-blur-xl shadow-2xl">
-        <div className="flex justify-between items-center max-w-7xl mx-auto px-8 h-20">
-          <Link href="/" className="flex items-center gap-3 group">
-            <span className="material-symbols-outlined text-primary text-3xl group-hover:scale-110 transition-transform">local_library</span>
-            <span className="text-2xl font-bold tracking-tighter text-white uppercase font-manrope hidden sm:block">Krishna Library</span>
-          </Link>
-          <nav className="hidden md:flex gap-1 items-center relative bg-white/[0.03] p-1 rounded-full">
+      {/* ─── Navigation ─── */}
+      <header className="fixed top-0 w-full z-[100] transition-all duration-500">
+        <div className="max-w-[90rem] mx-auto px-4 lg:px-8 h-24 flex justify-between items-center">
+          {/* Left Side */}
+          <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center group relative scale-[1.6] origin-left mr-4">
+              <div className="relative w-[150px] h-[80px] transition-transform duration-500 group-hover:scale-105">
+                <Image src="/assets/logo.png" alt="Krishna Library" fill className="object-contain object-left" priority />
+              </div>
+            </Link>
+            <div className="hidden xl:block translate-y-1 z-10">
+              <ThemeSwitch />
+            </div>
+          </div>
+
+          {/* Center Nav */}
+          <nav className="hidden xl:flex gap-1 items-center bg-white/[0.02] p-1.5 rounded-full border border-white/[0.05] backdrop-blur-2xl">
             {TABS.map((tab) => (
               <a
                 key={tab.id}
                 href={`#${tab.id}`}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative px-6 py-2 text-xs font-manrope font-black uppercase tracking-widest transition-all rounded-full ${activeTab === tab.id ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
+                className={`relative px-4 xl:px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.25em] transition-all rounded-full ${activeTab === tab.id ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
               >
                 {activeTab === tab.id && (
                   <motion.div
-                    layoutId="nav-indicator"
-                    className="absolute inset-0 bg-primary/20 rounded-full"
-                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                    layoutId="nav-pill"
+                    className="absolute inset-0 bg-primary/10 rounded-full border border-primary/20"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
                 <span className="relative z-10">{tab.label}</span>
               </a>
             ))}
           </nav>
-          <Link href="/login" className="text-[10px] text-white/10 hover:text-white/50 transition-colors uppercase tracking-[0.3em] font-black px-2">
-            Staff
-          </Link>
+
+          {/* Right Side */}
+          <div className="flex items-center gap-4 lg:gap-6">
+            <Link href="/login" className="hidden md:block text-[10px] font-black uppercase tracking-[0.3em] text-white/30 hover:text-primary transition-colors">
+              Staff Portal
+            </Link>
+            <a href="#enquiry" className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white !px-4 lg:!px-6 !py-3 !text-[10px] font-black uppercase tracking-[0.2em] !rounded-full shadow-[0_10px_20px_rgba(249,115,22,0.3)] transition-all hover:scale-105 flex items-center gap-2 group relative overflow-hidden shrink-0">
+              <span className="relative z-10">Book Seat</span>
+              <div className="flex -space-x-1 relative z-10">
+                <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                <ArrowRight size={12} className="opacity-50 group-hover:translate-x-1 transition-transform delay-75" />
+                <ArrowRight size={12} className="opacity-25 group-hover:translate-x-1 transition-transform delay-150" />
+              </div>
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </a>
+          </div>
         </div>
       </header>
 
-      <main className="mt-20">
-        <section id="home" className="relative min-h-[85vh] flex items-center justify-center overflow-hidden px-8 pt-20">
+      <main className="relative z-10">
+        
+        {/* Hero Section */}
+        <section id="home" className="relative min-h-screen flex items-center justify-center pt-24 pb-48 overflow-hidden">
           <div className="absolute inset-0 z-0">
-            <Image 
-              src="/assets/exterior.jpg"
-              alt="Zen Workspace" 
-              fill
-              className="object-cover opacity-30 grayscale contrast-125"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-transparent"></div>
+             <Image 
+               src="/assets/exterior.jpg"
+               alt="Library Architecture" 
+               fill
+               className="object-cover opacity-[0.25] mix-blend-lighten"
+               priority
+             />
+             <div className="absolute inset-0 bg-gradient-to-b from-[#010409] via-[#010409]/60 to-[#010409]" />
+          </div>
+
+          <div className="relative max-w-7xl mx-auto px-8 text-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="inline-flex items-center gap-3 bg-white/[0.02] border border-white/[0.05] px-5 py-2.5 rounded-full mb-10 backdrop-blur-xl">
+                 <div className="flex -space-x-2">
+                    {[1,2,3].map(i => <div key={i} className="w-6 h-6 rounded-full border-2 border-[#010409] bg-primary/40" />)}
+                 </div>
+                 <span className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em]">Join {activeStudents || 500}+ Scholars</span>
+                 <div className="w-px h-4 bg-white/10 mx-1" />
+                 <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#e9c400]">
+                   <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                   4.9/5 RATING
+                 </span>
+              </div>
+
+              <h1 className="text-6xl md:text-8xl lg:text-9xl font-black mb-8 leading-[0.85] tracking-[-0.06em] text-white font-manrope uppercase">
+                A <span className="text-[#e9c400] italic relative inline-block drop-shadow-[0_0_20px_rgba(233,196,0,0.4)]">
+                  Heaven
+                  <Sparkles className="absolute -top-4 -right-8 text-[#e9c400] w-8 h-8 animate-pulse" />
+                  <Sparkles className="absolute -bottom-2 -left-6 text-[#e9c400] w-6 h-6 animate-pulse" style={{ animationDelay: '1s' }} />
+                </span><br />
+                for <span className="text-white">Curious</span><br />
+                <span className="bg-gradient-to-r from-blue-300 via-cyan-200 to-blue-400 bg-clip-text text-transparent">Minds.</span>
+              </h1>
+
+              <p className="max-w-2xl mx-auto text-white/40 text-lg md:text-xl font-medium leading-relaxed tracking-tight mb-12">
+                Ambikapur&apos;s premier intellectual sanctuary. Engineered for absolute silence, 
+                unmatched connectivity, and the ultimate pursuit of academic excellence.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                <a href="#enquiry" className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-black uppercase tracking-[0.2em] !px-12 !py-5 !text-xs !rounded-2xl shadow-[0_20px_50px_rgba(249,115,22,0.3)] transition-all hover:scale-105 flex items-center justify-center">
+                  Start Your Journey
+                </a>
+                <a href="#branches" className="bg-transparent border border-orange-500/30 text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/50 hover:text-orange-300 font-black uppercase tracking-[0.2em] !px-12 !py-5 !text-xs !rounded-2xl group transition-all flex items-center justify-center">
+                  Explore Branches
+                  <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </a>
+              </div>
+            </motion.div>
           </div>
           
           <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 text-center max-w-5xl mx-auto"
+            animate={{ y: [0, 12, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
           >
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
-              className="inline-flex flex-col items-center mb-10"
-            >
-              <motion.span 
-                animate={{ y: [0, -8, 0], rotate: [-2, 2, -2] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="material-symbols-outlined text-[#e9c400] text-5xl block drop-shadow-[0_0_20px_rgba(233,196,0,0.4)]"
-              >
-                crown
-              </motion.span>
-              <div className="bg-white/5 backdrop-blur-xl px-8 py-3 rounded-2xl flex items-center gap-4 mt-2 shadow-2xl">
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className="material-symbols-outlined text-[#fbbc04] text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  ))}
-                </div>
-                <span className="text-white font-black tracking-tighter text-xl italic uppercase">4.9/5 <span className="text-white/40 font-bold not-italic text-xs ml-2 tracking-widest">Google Maps</span></span>
-              </div>
-            </motion.div>
-
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black mb-8 leading-[0.85] tracking-[-0.06em] text-white font-manrope uppercase">
-              A <span className="text-primary italic">Heaven</span><br />
-              for <span className="text-white/90">Curious</span><br />
-              <span className="bg-gradient-to-r from-primary via-white to-primary bg-clip-text text-transparent">Minds.</span>
-            </h1>
-            
-            <p className="text-white/50 text-lg md:text-2xl mb-12 max-w-3xl mx-auto font-body-md leading-relaxed tracking-tight">
-              Ambikapur&apos;s premier intellectual sanctuary. Engineered for absolute silence, 
-              unmatched connectivity, and the pursuit of excellence.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <a href="#enquiry" className="bg-primary text-on-primary px-12 py-5 rounded-2xl text-lg font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_40px_rgba(102,178,255,0.3)]">
-                Secure Your Seat
-              </a>
-              <a href="#gallery" className="glass-pane text-white px-12 py-5 rounded-2xl text-lg font-black uppercase tracking-widest hover:bg-white/10 transition-all">
-                Explore Space
-              </a>
-            </div>
+            <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Scroll</span>
+            <div className="w-px h-12 bg-gradient-to-b from-white/20 to-transparent" />
           </motion.div>
         </section>
 
-        <section className="py-32 max-w-7xl mx-auto px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              whileHover={{ y: -5 }} 
-              className="glass-pane p-10 rounded-[32px] text-center relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <span className="material-symbols-outlined text-primary text-6xl mb-6 block">timer</span>
-              <div className="text-5xl font-black text-white mb-2 font-manrope">
-                <Counter value={focusHours} suffix="+" />
-              </div>
-              <div className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Hours of Productivity</div>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              whileHover={{ y: -5 }} 
-              className="glass-pane p-10 rounded-[32px] text-center relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-tertiary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <span className="material-symbols-outlined text-tertiary text-6xl mb-6 block">hub</span>
-              <div className="text-5xl font-black text-white mb-2 font-manrope">
-                <Counter value={activeStudents} />
-              </div>
-              <div className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Active Scholars Today</div>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              whileHover={{ y: -5 }} 
-              className="glass-pane p-10 rounded-[32px] text-center relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <span className="material-symbols-outlined text-white text-6xl mb-6 block">event_seat</span>
-              <div className="text-5xl font-black text-white mb-2 font-manrope">
-                <Counter value={availableSeats} />
-              </div>
-              <div className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Real-time Seat Openings</div>
-            </motion.div>
+        <section className="relative py-24 px-8 overflow-hidden">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <StatItem icon={<span className="material-symbols-outlined text-primary text-3xl">domain</span>} label="Quiet Study Zones" value={2} delay={0.1} />
+              <StatItem icon={<ShieldCheck className="text-[#4ade80]" />} label="Active Scholars" value={activeStudents} delay={0.2} />
+              <StatItem icon={<Award className="text-tertiary" />} label="Real-time Seats" value={availableSeats} delay={0.3} />
+            </div>
           </div>
         </section>
 
-        <motion.section 
-          id="branches" 
-          className="py-32"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 1 }}
-        >
-          <div className="max-w-7xl mx-auto px-8 mb-20">
-            <div className="flex flex-col md:flex-row justify-between items-end gap-8">
-              <div className="max-w-2xl text-left">
-                <h2 className="text-4xl md:text-6xl font-black text-white mb-6 uppercase tracking-tighter font-manrope leading-[0.9]">Our Premium<br /><span className="text-primary">Establishments.</span></h2>
-                <p className="text-white/50 text-lg">Two elite locations in Ambikapur, meticulously designed for silence and success.</p>
-              </div>
-              <div className="bg-white/5 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] text-primary">
-                Live Status: Online
-              </div>
-            </div>
+        <section id="branches" className="relative py-24">
+          <div className="max-w-7xl mx-auto px-8 mb-32 relative z-10">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="max-w-3xl"
+            >
+               <span className="text-[10px] font-black text-primary uppercase tracking-[0.5em] mb-6 block">Elite Locations</span>
+               <h2 className="text-5xl md:text-7xl font-black text-white mb-8 uppercase tracking-tighter leading-none font-manrope">
+                 Crafted for <span className="text-primary italic">Deep Focus.</span>
+               </h2>
+               <p className="text-white/40 text-lg md:text-xl font-medium max-w-2xl leading-relaxed">
+                 Discover our two flagship establishments in Ambikapur, each engineered with state-of-the-art acoustic management and premium ergonomics.
+               </p>
+            </motion.div>
           </div>
-          <BranchShowcase occupancy={occupancy} />
-        </motion.section>
+          
+          <div className="relative z-10">
+            <BranchShowcase occupancy={occupancy} />
+          </div>
 
-        <section id="gallery" className="py-32">
-          <div className="max-w-7xl mx-auto px-8 text-center mb-20">
-            <h2 className="text-4xl md:text-6xl font-black text-white mb-6 uppercase tracking-tighter font-manrope">
-              The Interior<br />
-              <span className="text-[#fbbc04] italic relative inline-block drop-shadow-[0_0_15px_rgba(251,188,4,0.4)]">
-                Perspective.
-                <motion.div 
-                  animate={{ opacity: [0, 1, 0], scale: [0.8, 1.5, 0.8] }}
-                  transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-                  className="absolute -bottom-2 -left-10 text-[#fbbc04]"
-                >
-                  <Sparkles size={24} />
-                </motion.div>
-              </span>
-            </h2>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-orange-600/[0.05] blur-[150px] -translate-y-1/2 pointer-events-none" />
+        </section>
+
+        <section id="gallery" className="relative py-24">
+          <div className="max-w-7xl mx-auto px-8 mb-24 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-5xl md:text-8xl font-black text-white mb-6 uppercase tracking-tighter font-manrope">
+                The Intellectual <span className="text-tertiary italic drop-shadow-[0_0_20px_rgba(233,196,0,0.2)]">Sanctuary.</span>
+              </h2>
+              <p className="text-white/40 text-lg max-w-xl mx-auto">A visual tour of our meticulously curated study environments.</p>
+            </motion.div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 px-8 max-w-[1400px] mx-auto">
-             {[
-               { img: 'dark_room.jpg', area: 'Silent Dark Zone' },
-               { img: 'discussion_hall.jpg', area: 'Discussion Hub' },
-               { img: 'entry_gate.jpg', area: 'Main Entrance' },
-               { img: 'exterior.jpg', area: 'Modern Exterior' },
-               { img: 'light_room.jpg', area: 'Premium Light Room' },
-               { img: 'office.jpg', area: 'Administrative Office' },
-               { img: 'parking.jpg', area: 'Secured Parking' }
-             ].map((item, i) => (
-               <motion.div 
-                 initial={{ opacity: 0, y: 20 }}
-                 whileInView={{ opacity: 1, y: 0 }}
-                 viewport={{ once: true }}
-                 transition={{ delay: i * 0.1 }}
-                 key={item.img} 
-                 onClick={() => setSelectedImage(item)}
-                 className="overflow-hidden rounded-[32px] h-[300px] md:h-[400px] relative group shadow-2xl cursor-pointer"
-               >
+
+          <div className="max-w-[1600px] mx-auto px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { img: 'dark_room.jpg', area: 'Silent Dark Zone', span: 'lg:col-span-2' },
+                { img: 'discussion_hall.jpg', area: 'Discussion Hub' },
+                { img: 'light_room.jpg', area: 'Premium Light Room' },
+                { img: 'entry_gate.jpg', area: 'Main Entrance' },
+                { img: 'exterior.jpg', area: 'Modern Exterior', span: 'lg:col-span-2' },
+                { img: 'office.jpg', area: 'Admin Office' },
+              ].map((item, i) => (
+                <motion.div 
+                  key={item.img}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  onClick={() => setSelectedImage(item)}
+                  className={`relative h-[400px] rounded-[32px] overflow-hidden group cursor-pointer ${item.span || ""}`}
+                >
                   <Image 
                     src={`/assets/${item.img}`} 
                     alt={item.area} 
                     fill
-                    className="object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-110 group-hover:scale-100" 
+                    className="object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-1000" 
                   />
-                  
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#060e20] via-[#060e20]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
-                    <motion.div 
-                      initial={{ y: 10, opacity: 0 }}
-                      whileInView={{ y: 0, opacity: 1 }}
-                      className="space-y-1"
-                    >
-                      <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Discovery</span>
-                      <h4 className="text-xl font-black text-white uppercase tracking-tighter font-manrope italic">{item.area}</h4>
-                    </motion.div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#010409] via-[#010409]/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 p-8 flex flex-col justify-end">
+                     <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Perspective</span>
+                     <h4 className="text-2xl font-black text-white uppercase italic tracking-tighter">{item.area}</h4>
                   </div>
-                  <div className="absolute inset-4 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-               </motion.div>
-             ))}
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
 
-        <section id="membership" className="py-32">
+        <section id="membership" className="relative py-24">
           <KrishnaTestimonials />
         </section>
 
-        <section id="enquiry" className="py-32 relative overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 blur-[150px] rounded-full pointer-events-none" />
+        <section id="enquiry" className="relative py-24">
+          <div className="absolute inset-0 bg-primary/[0.01] mix-blend-screen" />
+          
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             className="max-w-4xl mx-auto px-8 relative z-10"
           >
-             <div className="glass-pane p-16 rounded-[48px] shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
-                <div className="text-center mb-12">
-                  <h2 className="text-5xl font-black text-white mb-4 uppercase tracking-tighter font-manrope italic">Reserve Your Space</h2>
-                  <p className="text-white/40 text-lg">Leave your contact details and our registrar will contact you within 4 hours.</p>
-                </div>
-                <form onSubmit={handleEnquirySubmit} className="space-y-6 relative" suppressHydrationWarning>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">Full Name</label>
-                        <input type="text" placeholder="John Doe" required className="w-full bg-white/5 p-6 rounded-2xl text-white outline-none focus:bg-white/[0.08] transition-all placeholder:text-white/10 font-bold" value={enquiryForm.name} onChange={e => setEnquiryForm({...enquiryForm, name: e.target.value})} />
-                      </div>
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">Contact Number</label>
-                        <input type="tel" placeholder="+91" required className="w-full bg-white/5 p-6 rounded-2xl text-white outline-none focus:bg-white/[0.08] transition-all placeholder:text-white/10 font-bold" value={enquiryForm.phone} onChange={e => setEnquiryForm({...enquiryForm, phone: e.target.value})} />
-                      </div>
-                   </div>
-                   <div className="space-y-3">
-                     <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] ml-2">Preferred Shift</label>
-                     <div className="relative">
-                       <select className="w-full bg-white/5 p-6 rounded-2xl text-white outline-none focus:bg-white/[0.08] transition-all appearance-none cursor-pointer font-bold" value={enquiryForm.interest} onChange={e => setEnquiryForm({...enquiryForm, interest: e.target.value})}>
-                         <option value="Full Day" className="bg-[#060e20] text-white">Full Day Access (Elite)</option>
-                         <option value="Half Day" className="bg-[#060e20] text-white">Half Day Batch</option>
-                         <option value="Night Shift" className="bg-[#060e20] text-white">Late Night Access</option>
-                         <option value="Just Exploring" className="bg-[#060e20] text-white">Request Site Visit</option>
-                       </select>
-                       <span className="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none">expand_more</span>
+             <div className="glass-pane-elevated p-12 md:p-20 rounded-[48px] shadow-[0_60px_120px_rgba(0,0,0,0.8)] relative overflow-hidden group">
+                <div className="absolute inset-0 opacity-[0.02] pointer-events-none group-hover:opacity-[0.04] transition-opacity duration-1000" style={{ backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.4) 1px, transparent 0)`, backgroundSize: '32px 32px' }} />
+                
+                <div className="relative z-10">
+                  <div className="text-center mb-16">
+                    <div className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.4em] mb-6">Join the Circle</div>
+                    <h2 className="text-5xl md:text-7xl font-black text-white mb-6 uppercase tracking-tighter font-manrope italic leading-none">Apply for<br />Admission.</h2>
+                    <p className="text-white/40 text-lg max-w-sm mx-auto font-medium">Leave your contact details and our registrar will contact you within 4 hours.</p>
+                  </div>
+                  
+                  <form onSubmit={handleEnquirySubmit} className="space-y-8">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] ml-1">Your Full Name</label>
+                          <input type="text" placeholder="e.g. Aryan Sharma" required className="w-full bg-white/[0.02] border border-white/[0.05] p-6 rounded-2xl text-white outline-none focus:bg-white/[0.04] focus:border-primary/40 transition-all placeholder:text-white/10 font-bold" value={enquiryForm.name} onChange={e => setEnquiryForm({...enquiryForm, name: e.target.value})} />
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] ml-1">WhatsApp Number</label>
+                          <input type="tel" placeholder="+91" required className="w-full bg-white/[0.02] border border-white/[0.05] p-6 rounded-2xl text-white outline-none focus:bg-white/[0.04] focus:border-primary/40 transition-all placeholder:text-white/10 font-bold" value={enquiryForm.phone} onChange={e => setEnquiryForm({...enquiryForm, phone: e.target.value})} />
+                        </div>
                      </div>
-                   </div>
-                   <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-on-primary py-6 rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl transition-all hover:scale-[1.02] flex justify-center items-center gap-3 disabled:opacity-50" disabled={enquiryStatus === 'submitting'}>
-                      {enquiryStatus === 'submitting' ? "Transmitting..." : "Send Application"}
-                      <span className="material-symbols-outlined text-sm">north_east</span>
-                   </button>
-                   {enquiryStatus === 'success' && <div className="bg-green-500/10 text-green-400 p-6 rounded-2xl text-center mt-6 font-bold uppercase tracking-widest text-xs italic animate-pulse">Application sent successfully. Welcome to the elite circle.</div>}
-                   {enquiryStatus === 'error' && <div className="bg-red-500/10 text-red-400 p-6 rounded-2xl text-center mt-6 font-bold uppercase tracking-widest text-xs italic">Transmission failed. Please check connection.</div>}
-                </form>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <div className="space-y-3">
+                         <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] ml-1">Branch Preference</label>
+                         <div className="relative">
+                           <select className="w-full bg-white/[0.02] border border-white/[0.05] p-6 rounded-2xl text-white outline-none focus:bg-white/[0.04] transition-all appearance-none cursor-pointer font-bold" value={enquiryForm.branch} onChange={e => setEnquiryForm({...enquiryForm, branch: e.target.value})}>
+                             <option value="bengali-chowk" className="bg-[#010409] text-white">Bengali Chowk (Flagship Hub)</option>
+                             <option value="namnakala" className="bg-[#010409] text-white">Namnakala (Central Wing)</option>
+                           </select>
+                           <span className="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none">expand_more</span>
+                         </div>
+                       </div>
+                       <div className="space-y-3">
+                         <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em] ml-1">Shift Preference</label>
+                         <div className="relative">
+                           <select className="w-full bg-white/[0.02] border border-white/[0.05] p-6 rounded-2xl text-white outline-none focus:bg-white/[0.04] transition-all appearance-none cursor-pointer font-bold" value={enquiryForm.interest} onChange={e => setEnquiryForm({...enquiryForm, interest: e.target.value})}>
+                             <option value="Full Day" className="bg-[#010409] text-white">Full Day Access (07:00 AM – 10:00 PM)</option>
+                             <option value="Half Day" className="bg-[#010409] text-white">Half Day Batch (Morning/Evening)</option>
+                             <option value="Night Shift" className="bg-[#010409] text-white">Late Night Intensive</option>
+                           </select>
+                           <span className="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none">expand_more</span>
+                         </div>
+                       </div>
+                     </div>
+                     <button type="submit" className="w-full btn-primary !py-7 !rounded-2xl !text-sm flex justify-center items-center gap-4 disabled:opacity-50 group" disabled={enquiryStatus === 'submitting'}>
+                        {enquiryStatus === 'submitting' ? "Transmitting Application..." : "Secure My Seat"}
+                        <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
+                     </button>
+                     
+                     <AnimatePresence>
+                       {enquiryStatus === 'success' && (
+                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-emerald-500/10 text-emerald-400 p-6 rounded-2xl text-center font-bold uppercase tracking-widest text-xs italic">Application sent. Welcome to the elite circle.</motion.div>
+                       )}
+                       {enquiryStatus === 'error' && (
+                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-red-500/10 text-red-400 p-6 rounded-2xl text-center font-bold uppercase tracking-widest text-xs italic">Transmission failed. Check connection.</motion.div>
+                       )}
+                     </AnimatePresence>
+                  </form>
+                </div>
              </div>
           </motion.div>
         </section>
+
       </main>
 
-      <footer className="w-full py-20">
+      {/* ─── Footer ─── */}
+      <footer className="relative z-10 py-32 overflow-hidden">
         <div className="max-w-7xl mx-auto px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-12">
-            <div className="text-center md:text-left">
-              <div className="text-3xl font-black text-white mb-2 uppercase tracking-tighter italic">Krishna Library</div>
-              <p className="text-white/20 font-manrope text-xs font-bold uppercase tracking-widest">Intellectual Zen Workspace. Founded 2024.</p>
+          <div className="flex flex-col md:flex-row justify-between items-start gap-16 mb-20">
+            <div className="max-w-md">
+              <div className="text-3xl font-black text-white mb-6 uppercase tracking-tighter italic">Krishna Library</div>
+              <p className="text-white/20 font-medium leading-relaxed mb-8">
+                The ultimate intellectual zen workspace. Founded in 2024 to provide scholars with the environment they deserve.
+              </p>
             </div>
-            <div className="flex flex-col md:items-end gap-6">
-              <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest">
-                <a className="text-white/30 hover:text-primary transition-colors flex items-center gap-2" href="#">
-                  <span className="material-symbols-outlined text-base">directions</span> Directions
-                </a>
-                <a className="text-white/30 hover:text-primary transition-colors" href="#">Legal</a>
-                <a className="text-white/30 hover:text-primary transition-colors" href="#">Privacy</a>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-12 text-[10px] font-black uppercase tracking-[0.3em]">
+              <div className="space-y-6">
+                <div className="text-white/10">Quick Links</div>
+                <div className="flex flex-col gap-4">
+                  <a href="#" className="text-white/40 hover:text-white">Home</a>
+                  <a href="#" className="text-white/40 hover:text-white">Gallery</a>
+                  <a href="#" className="text-white/40 hover:text-white">Contact</a>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div className="text-white/10">Legal</div>
+                <div className="flex flex-col gap-4">
+                  <a href="#" className="text-white/40 hover:text-white">Privacy</a>
+                  <a href="#" className="text-white/40 hover:text-white">Terms</a>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div className="text-white/10">Portal</div>
+                <div className="flex flex-col gap-4">
+                  <Link href="/login" className="text-white/40 hover:text-primary">Staff Login</Link>
+                </div>
               </div>
             </div>
+          </div>
+          
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8 pt-12 border-t border-white/[0.01]">
+            <div className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">© 2026 Krishna Library Hub</div>
+            <div className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">Designed in Ambikapur</div>
           </div>
         </div>
       </footer>
 
+      {/* ─── Gallery Modal ─── */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-[#060e20]/95 backdrop-blur-2xl flex items-center justify-center p-4 md:p-12"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-[#010409]/95 backdrop-blur-3xl flex items-center justify-center p-4 md:p-12"
             onClick={() => setSelectedImage(null)}
           >
             <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="relative max-w-7xl w-full h-full flex flex-col items-center justify-center gap-8"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative w-full h-full max-h-[80vh] overflow-hidden rounded-[40px] shadow-2xl">
-                <Image 
-                  src={`/assets/${selectedImage.img}`} 
-                  alt={selectedImage.area} 
-                  fill
-                  className="object-contain"
-                />
+              <div className="relative w-full h-full max-h-[80vh] overflow-hidden rounded-[40px] shadow-2xl border border-white/5">
+                <Image src={`/assets/${selectedImage.img}`} alt={selectedImage.area} fill className="object-contain" />
               </div>
-              
               <div className="text-center space-y-2">
-                <span className="text-primary font-black uppercase tracking-[0.4em] text-xs">Viewing Area</span>
-                <h3 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter italic font-manrope">
-                  {selectedImage.area}
-                </h3>
+                <span className="text-primary font-black uppercase tracking-[0.4em] text-xs italic">Viewing Space</span>
+                <h3 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter italic font-manrope">{selectedImage.area}</h3>
               </div>
-
-              <button 
-                onClick={() => setSelectedImage(null)}
-                className="absolute top-0 right-0 md:-top-12 md:-right-12 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all group"
-              >
+              <button onClick={() => setSelectedImage(null)} className="absolute top-0 right-0 md:-top-12 md:-right-12 w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all group">
                 <span className="material-symbols-outlined text-white/50 group-hover:text-white group-hover:rotate-90 transition-all">close</span>
               </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        {mounted && loading && (
+          <motion.div 
+            key="loader-overlay"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="fixed inset-0 z-[9999] bg-[#010409] flex flex-col items-center justify-center space-y-8"
+          >
+            <Loader />
+            <h2 className="text-2xl font-black text-primary font-manrope animate-pulse uppercase tracking-[0.3em] italic">Preparing Excellence...</h2>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function StatItem({ icon, label, value, suffix = "", delay = 0 }: { icon: React.ReactNode, label: string, value: number, suffix?: string, delay?: number }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay }}
+      className="glass-pane p-12 rounded-[40px] text-center group hover:bg-white/[0.04] transition-all"
+    >
+      <div className="w-16 h-16 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-center mx-auto mb-8 group-hover:scale-110 transition-transform duration-500 shadow-xl">
+        {icon}
+      </div>
+      <div className="text-5xl font-black text-white mb-3 font-manrope tracking-tighter">
+        <Counter value={value} suffix={suffix} />
+      </div>
+      <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">{label}</div>
+    </motion.div>
   );
 }

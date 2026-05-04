@@ -37,13 +37,11 @@ export default function DuesPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const getDaysOverdue = (dateStr: string) => {
-    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
-    return diff;
+    return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
   };
 
   const getDaysLeft = (dateStr: string) => {
-    const diff = Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    return diff;
+    return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   };
 
   const sendWhatsApp = (member: any, type: 'reminder' | 'overdue') => {
@@ -64,141 +62,147 @@ export default function DuesPage() {
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <span className="material-symbols-outlined animate-spin text-4xl text-primary">sync</span>
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <span className="material-symbols-outlined animate-spin text-3xl text-primary">progress_activity</span>
+      <span className="text-sm text-on-surface-variant font-medium">Loading dues data...</span>
     </div>
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header */}
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold font-manrope text-white mb-2">Dues & Defaulters</h1>
-          <p className="text-on-surface-variant font-body-md">Payment lifecycle tracking for {branchName} Branch</p>
+          <h1 className="page-title">Dues & Defaulters</h1>
+          <p className="page-subtitle">Payment lifecycle tracking for {branchName} Branch</p>
         </div>
-        <div className="flex gap-4">
-          <div className="glass-pane px-5 py-3 rounded-2xl border border-tertiary/30 text-center">
-            <div className="text-2xl font-black text-tertiary">{dueSoon.length}</div>
-            <div className="text-xs text-on-surface-variant uppercase font-bold tracking-wider">Due in 3 Days</div>
+        <div className="flex gap-3">
+          <div className="glass-pane-elevated !p-3 text-center min-w-[100px]">
+            <div className="text-xl font-black text-tertiary">{dueSoon.length}</div>
+            <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Due Soon</div>
           </div>
-          <div className="glass-pane px-5 py-3 rounded-2xl border border-error/30 text-center">
-            <div className="text-2xl font-black text-error">{defaulters.length}</div>
-            <div className="text-xs text-on-surface-variant uppercase font-bold tracking-wider">Defaulters</div>
+          <div className="glass-pane-elevated !p-3 text-center min-w-[100px]">
+            <div className="text-xl font-black text-red-400">{defaulters.length}</div>
+            <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Defaulters</div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Due Soon Panel */}
-        <div className="glass-pane rounded-3xl border border-tertiary/20 overflow-hidden">
-          <div className="p-6 border-b border-white/5 flex items-center gap-3 bg-surface-container-low/50">
-            <span className="material-symbols-outlined text-tertiary text-2xl">schedule</span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* ─── Due Soon Panel ─── */}
+        <div className="glass-pane-elevated !p-0 overflow-hidden !border-tertiary/15">
+          <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-3 bg-tertiary/[0.03]">
+            <div className="stat-icon stat-icon-warning w-9 h-9">
+              <span className="material-symbols-outlined text-base">schedule</span>
+            </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Ending in 3 Days</h2>
-              <p className="text-xs text-on-surface-variant">{dueSoon.length} member(s) need renewal</p>
+              <h2 className="text-base font-bold text-white font-manrope">Expiring Soon</h2>
+              <p className="text-xs text-on-surface-variant">{dueSoon.length} member(s) due within 3 days</p>
             </div>
           </div>
           <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
             {dueSoon.length === 0 ? (
-              <div className="text-center py-12 text-on-surface-variant">
-                <span className="material-symbols-outlined text-4xl text-green-500 block mb-2">check_circle</span>
-                <p className="font-bold text-green-400">All clear! No subscriptions expiring soon.</p>
+              <div className="empty-state !py-12">
+                <span className="material-symbols-outlined text-4xl text-emerald-400/40 mb-3">check_circle</span>
+                <div className="text-sm font-medium text-emerald-400/70">All clear! No expiring subscriptions.</div>
               </div>
             ) : dueSoon.map(m => (
-              <div key={m.id} className="bg-surface-container/50 p-4 rounded-2xl border border-tertiary/10 hover:border-tertiary/30 transition-colors">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <div className="text-white font-bold">{m.full_name}</div>
-                    <div className="text-xs text-primary font-bold">{m.permanent_id}</div>
-                    <div className="text-xs text-on-surface-variant mt-0.5">{m.mobile} · Seat {m.seat_no || 'N/A'}</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="bg-tertiary/20 text-tertiary text-xs font-bold px-2 py-1 rounded-lg block">
-                      {getDaysLeft(m.subscription_end_date)}d left
-                    </span>
-                    <div className="text-[10px] text-on-surface-variant mt-1">
-                      {new Date(m.subscription_end_date).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => sendWhatsApp(m, 'reminder')}
-                    className="flex-1 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-white transition-colors text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1"
-                  >
-                    <span className="material-symbols-outlined text-sm">send</span>
-                    WhatsApp Reminder
-                  </button>
-                  <button
-                    disabled={actionId === m.id}
-                    onClick={() => reactivateMember(m)}
-                    className="flex-1 bg-primary/20 text-primary hover:bg-primary hover:text-white transition-colors text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1 disabled:opacity-50"
-                  >
-                    <span className="material-symbols-outlined text-sm">autorenew</span>
-                    Renew Now
-                  </button>
-                </div>
-              </div>
+              <DueMemberCard
+                key={m.id}
+                member={m}
+                type="warning"
+                badgeText={`${getDaysLeft(m.subscription_end_date)}d left`}
+                badgeClass="badge-warning"
+                dateLabel={new Date(m.subscription_end_date).toLocaleDateString()}
+                onMessage={() => sendWhatsApp(m, 'reminder')}
+                onRenew={() => reactivateMember(m)}
+                messageLabel="Send Reminder"
+                renewLabel="Renew Now"
+                isLoading={actionId === m.id}
+              />
             ))}
           </div>
         </div>
 
-        {/* Defaulters Panel */}
-        <div className="glass-pane rounded-3xl border border-error/30 overflow-hidden">
-          <div className="p-6 border-b border-white/5 flex items-center gap-3 bg-error/5">
-            <span className="material-symbols-outlined text-error text-2xl animate-pulse">warning</span>
+        {/* ─── Defaulters Panel ─── */}
+        <div className="glass-pane-elevated !p-0 overflow-hidden !border-red-500/15">
+          <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-3 bg-red-500/[0.03]">
+            <div className="stat-icon stat-icon-danger w-9 h-9">
+              <span className="material-symbols-outlined text-base">warning</span>
+            </div>
             <div>
-              <h2 className="text-xl font-bold text-error">Overdue Defaulters</h2>
+              <h2 className="text-base font-bold text-white font-manrope">Overdue Defaulters</h2>
               <p className="text-xs text-on-surface-variant">{defaulters.length} inactive member(s)</p>
             </div>
           </div>
           <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
             {defaulters.length === 0 ? (
-              <div className="text-center py-12 text-on-surface-variant">
-                <span className="material-symbols-outlined text-4xl text-green-500 block mb-2">verified</span>
-                <p className="font-bold text-green-400">No defaulters! All members are active.</p>
+              <div className="empty-state !py-12">
+                <span className="material-symbols-outlined text-4xl text-emerald-400/40 mb-3">verified</span>
+                <div className="text-sm font-medium text-emerald-400/70">No defaulters! All members active.</div>
               </div>
             ) : defaulters.map(m => (
-              <div key={m.id} className="bg-error/5 p-4 rounded-2xl border border-error/20 hover:border-error/40 transition-colors">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <div className="text-white font-bold">{m.full_name}</div>
-                    <div className="text-xs text-primary font-bold">{m.permanent_id}</div>
-                    <div className="text-xs text-on-surface-variant mt-0.5">{m.mobile}</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="bg-error/20 text-error text-xs font-bold px-2 py-1 rounded-lg block">
-                      {getDaysOverdue(m.subscription_end_date)}d overdue
-                    </span>
-                    <div className="text-[10px] text-on-surface-variant mt-1">
-                      Expired: {new Date(m.subscription_end_date).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => sendWhatsApp(m, 'overdue')}
-                    className="flex-1 bg-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white transition-colors text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1"
-                  >
-                    <span className="material-symbols-outlined text-sm">send</span>
-                    Chase Up
-                  </button>
-                  <button
-                    disabled={actionId === m.id}
-                    onClick={() => reactivateMember(m)}
-                    className="flex-1 bg-primary/20 text-primary hover:bg-primary hover:text-white transition-colors text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1 disabled:opacity-50"
-                  >
-                    {actionId === m.id
-                      ? <span className="material-symbols-outlined animate-spin text-sm">sync</span>
-                      : <span className="material-symbols-outlined text-sm">restart_alt</span>
-                    }
-                    Re-activate
-                  </button>
-                </div>
-              </div>
+              <DueMemberCard
+                key={m.id}
+                member={m}
+                type="danger"
+                badgeText={`${getDaysOverdue(m.subscription_end_date)}d overdue`}
+                badgeClass="badge-danger"
+                dateLabel={`Expired: ${new Date(m.subscription_end_date).toLocaleDateString()}`}
+                onMessage={() => sendWhatsApp(m, 'overdue')}
+                onRenew={() => reactivateMember(m)}
+                messageLabel="Chase Up"
+                renewLabel="Re-activate"
+                isLoading={actionId === m.id}
+              />
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function DueMemberCard({ member, type, badgeText, badgeClass, dateLabel, onMessage, onRenew, messageLabel, renewLabel, isLoading }: {
+  member: any; type: 'warning' | 'danger'; badgeText: string; badgeClass: string;
+  dateLabel: string; onMessage: () => void; onRenew: () => void;
+  messageLabel: string; renewLabel: string; isLoading: boolean;
+}) {
+  const borderColor = type === 'warning' ? 'border-tertiary/10 hover:border-tertiary/25' : 'border-red-500/10 hover:border-red-500/25';
+  const bgColor = type === 'warning' ? 'bg-tertiary/[0.03]' : 'bg-red-500/[0.03]';
+
+  return (
+    <div className={`${bgColor} p-4 rounded-xl border ${borderColor} transition-colors`}>
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <div className="text-white font-semibold text-sm">{member.full_name}</div>
+          <div className="text-xs text-primary font-medium mt-0.5">{member.permanent_id}</div>
+          <div className="text-xs text-on-surface-variant mt-0.5">{member.mobile} · Seat {member.seat_no || 'N/A'}</div>
+        </div>
+        <div className="text-right">
+          <span className={`badge ${badgeClass}`}>{badgeText}</span>
+          <div className="text-[10px] text-on-surface-variant mt-1">{dateLabel}</div>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={onMessage}
+          className="flex-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs font-semibold py-2 rounded-lg flex items-center justify-center gap-1.5 border border-emerald-500/15 hover:border-emerald-500"
+        >
+          <span className="material-symbols-outlined text-sm">send</span>
+          {messageLabel}
+        </button>
+        <button
+          disabled={isLoading}
+          onClick={onRenew}
+          className="flex-1 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary transition-all text-xs font-semibold py-2 rounded-lg flex items-center justify-center gap-1.5 disabled:opacity-50 border border-primary/15 hover:border-primary"
+        >
+          {isLoading
+            ? <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+            : <span className="material-symbols-outlined text-sm">autorenew</span>
+          }
+          {renewLabel}
+        </button>
       </div>
     </div>
   );

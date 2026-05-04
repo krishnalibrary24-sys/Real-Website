@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BranchProvider, useBranch } from "@/components/branch-context";
-import { BouncingBalls } from "@/components/ui/bouncing-balls";
 
 function DashboardInner({ children, role }: { children: React.ReactNode, role: string }) {
   const pathname = usePathname();
@@ -12,14 +11,14 @@ function DashboardInner({ children, role }: { children: React.ReactNode, role: s
   const { activeBranch, setActiveBranch } = useBranch();
 
   const navLinks = [
-    { name: "Overview", icon: "dashboard", path: "/dashboard" },
-    { name: "Student Directory", icon: "group", path: "/dashboard/members" },
-    { name: "Admission Portal", icon: "person_add", path: "/dashboard/admission" },
+    { name: "Overview", icon: "space_dashboard", path: "/dashboard" },
+    { name: "Students", icon: "school", path: "/dashboard/members" },
+    { name: "Admission", icon: "person_add", path: "/dashboard/admission" },
     { name: "Seat Map", icon: "grid_view", path: "/dashboard/seating" },
-    { name: "Dues & Defaulters", icon: "warning", path: "/dashboard/dues" },
-    { name: "Invoices", icon: "receipt", path: "/dashboard/invoices" },
-    { name: "Enquiries", icon: "help_center", path: "/dashboard/enquiries" },
-    { name: "Expenses", icon: "receipt_long", path: "/dashboard/expenses" },
+    { name: "Dues", icon: "account_balance_wallet", path: "/dashboard/dues" },
+    { name: "Invoices", icon: "receipt_long", path: "/dashboard/invoices" },
+    { name: "Enquiries", icon: "contact_mail", path: "/dashboard/enquiries" },
+    { name: "Expenses", icon: "trending_up", path: "/dashboard/expenses" },
   ];
 
   const handleLogout = () => {
@@ -28,99 +27,125 @@ function DashboardInner({ children, role }: { children: React.ReactNode, role: s
     router.push("/login");
   };
 
-  return (
-    <div className="min-h-screen bg-surface flex flex-col md:flex-row text-foreground font-body-md overflow-hidden relative">
-      <BouncingBalls 
-        numBalls={25} 
-        colors={["#bfc2ff", "#ffffff"]} 
-        opacity={0.15} 
-        minRadius={0.5} 
-        maxRadius={2.5}
-        speed={0.4}
-      />
-      {/* Background Gradient */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary-container/20 via-surface to-background pointer-events-none z-[-1]"></div>
+  const getRoleBadge = () => {
+    if (isAdmin) return { label: "Admin", color: "bg-primary/15 text-primary border-primary/25" };
+    if (role === "bengali-chowk") return { label: "Bengali Chowk", color: "bg-tertiary/15 text-tertiary border-tertiary/25" };
+    return { label: "Namnakala", color: "bg-secondary/15 text-secondary border-secondary/25" };
+  };
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col bg-surface-container-low/80 backdrop-blur-xl border-r border-white/5 h-screen sticky top-0">
-        <div className="p-6 border-b border-white/5 flex flex-col gap-1">
-          <h1 className="text-xl font-bold font-manrope text-white tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">local_library</span>
-            Krishna Library
-          </h1>
-          <span className="text-xs font-label-caps text-secondary-container uppercase tracking-widest font-bold">
-            {isAdmin ? "Admin Portal" : "Branch Office"}
-          </span>
+  const badge = getRoleBadge();
+
+  return (
+    <div className="h-screen w-full bg-surface flex flex-col md:flex-row text-foreground font-body-md overflow-hidden relative">
+      {/* Ambient Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-orange-600/[0.08] rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-amber-500/[0.06] rounded-full blur-[120px]" />
+      </div>
+
+      {/* ═══ Desktop Sidebar ═══ */}
+      <aside className="hidden md:flex w-[260px] flex-col bg-surface-container-low/60 backdrop-blur-xl border-r border-white/[0.06] h-screen sticky top-0 z-20">
+        {/* Logo */}
+        <div className="px-6 py-5 border-b border-white/[0.06]">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center border border-primary/20 group-hover:bg-primary/25 transition-colors">
+              <span className="material-symbols-outlined text-primary text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>local_library</span>
+            </div>
+            <div>
+              <span className="text-base font-bold text-white tracking-tight block font-manrope">Krishna Library</span>
+              <span className={`text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border inline-block mt-0.5 ${badge.color}`}>
+                {badge.label}
+              </span>
+            </div>
+          </Link>
         </div>
 
-        {/* Branch Toggle Switch for Admin */}
+        {/* Branch Toggle (Admin only) */}
         {isAdmin && (
-          <div className="p-4 border-b border-white/5">
-            <div className="bg-surface-container-highest rounded-xl p-1 flex relative">
+          <div className="px-4 py-3 border-b border-white/[0.06]">
+            <div className="bg-white/[0.04] rounded-xl p-1 flex relative">
               <button 
                 onClick={() => setActiveBranch('bengali-chowk')}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all z-10 ${activeBranch === 'bengali-chowk' ? 'text-white' : 'text-on-surface-variant hover:text-white'}`}
+                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all z-10 ${activeBranch === 'bengali-chowk' ? 'text-white' : 'text-on-surface-variant hover:text-white/70'}`}
               >
                 Bengali Chowk
               </button>
               <button 
                 onClick={() => setActiveBranch('namnakala')}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all z-10 ${activeBranch === 'namnakala' ? 'text-white' : 'text-on-surface-variant hover:text-white'}`}
+                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all z-10 ${activeBranch === 'namnakala' ? 'text-white' : 'text-on-surface-variant hover:text-white/70'}`}
               >
                 Namnakala
               </button>
-              {/* Sliding Active Background */}
               <div 
-                className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-primary rounded-lg transition-all duration-300 ease-in-out shadow-[0_0_10px_rgba(191,194,255,0.2)]`}
+                className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-primary/80 rounded-lg transition-all duration-300 ease-out shadow-[0_0_12px_rgba(191,194,255,0.15)]"
                 style={{ left: activeBranch === 'bengali-chowk' ? '4px' : 'calc(50%)' }}
-              ></div>
+              />
             </div>
           </div>
         )}
 
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {navLinks.map((link) => {
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto" data-lenis-prevent>
+          <div className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest px-4 mb-2">Navigation</div>
+          {navLinks.slice(0, 4).map((link) => {
             const isActive = pathname === link.path;
             return (
               <Link 
                 key={link.path} 
                 href={link.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold ${
-                  isActive 
-                    ? "bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_rgba(191,194,255,0.1)]" 
-                    : "text-on-surface-variant hover:bg-white/5 hover:text-white"
-                }`}
+                className={`sidebar-link ${isActive ? 'active' : 'text-on-surface-variant'}`}
               >
-                <span className="material-symbols-outlined text-lg">{link.icon}</span>
-                {link.name}
+                <span className="material-symbols-outlined text-lg" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>{link.icon}</span>
+                <span>{link.name}</span>
+              </Link>
+            );
+          })}
+          
+          <div className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest px-4 mt-5 mb-2">Finance</div>
+          {navLinks.slice(4).map((link) => {
+            const isActive = pathname === link.path;
+            return (
+              <Link 
+                key={link.path} 
+                href={link.path}
+                className={`sidebar-link ${isActive ? 'active' : 'text-on-surface-variant'}`}
+              >
+                <span className="material-symbols-outlined text-lg" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>{link.icon}</span>
+                <span>{link.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/5">
+        {/* Sign Out */}
+        <div className="p-3 border-t border-white/[0.06]">
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 w-full text-left rounded-xl text-error hover:bg-error/10 transition-colors font-semibold"
+            className="sidebar-link text-on-surface-variant hover:text-red-400 hover:bg-red-500/[0.06] w-full"
           >
             <span className="material-symbols-outlined text-lg">logout</span>
-            Sign Out
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 h-screen overflow-y-auto pb-20 md:pb-0">
+      {/* ═══ Main Content ═══ */}
+      <main className="flex-1 h-screen overflow-y-auto pb-20 md:pb-0 relative z-10" data-lenis-prevent>
         {/* Mobile Header */}
-        <header className="md:hidden flex items-center justify-between p-4 bg-surface-container-low/90 backdrop-blur-md border-b border-white/5 sticky top-0 z-50">
-          <div className="flex flex-col">
-            <span className="text-lg font-bold font-manrope text-white tracking-tight">Krishna Library</span>
-            <span className="text-[10px] text-secondary-container font-bold uppercase tracking-widest">
-              {isAdmin ? "Global Admin" : "Branch Office"}
-            </span>
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-surface-container-low/80 backdrop-blur-xl border-b border-white/[0.06] sticky top-0 z-50">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center border border-primary/20">
+              <span className="material-symbols-outlined text-primary text-base" style={{ fontVariationSettings: "'FILL' 1" }}>local_library</span>
+            </div>
+            <div>
+              <span className="text-sm font-bold text-white tracking-tight font-manrope">Krishna Library</span>
+              <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded border ml-2 ${badge.color}`}>
+                {badge.label}
+              </span>
+            </div>
           </div>
-          <button onClick={handleLogout} className="text-on-surface-variant hover:text-error transition-colors p-2">
-            <span className="material-symbols-outlined">logout</span>
+          <button onClick={handleLogout} className="text-on-surface-variant hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-red-500/10">
+            <span className="material-symbols-outlined text-xl">logout</span>
           </button>
         </header>
 
@@ -129,22 +154,22 @@ function DashboardInner({ children, role }: { children: React.ReactNode, role: s
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-highest/95 backdrop-blur-xl border-t border-white/10 z-50 px-2 py-2 flex justify-around pb-safe">
-        {navLinks.map((link) => {
+      {/* ═══ Mobile Bottom Nav ═══ */}
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest/95 backdrop-blur-xl border-t border-white/[0.06] z-50 px-1 py-1.5 flex justify-around pb-safe">
+        {navLinks.slice(0, 5).map((link) => {
           const isActive = pathname === link.path;
           return (
             <Link 
               key={link.path} 
               href={link.path}
-              className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
-                isActive ? "text-primary" : "text-on-surface-variant"
+              className={`flex flex-col items-center py-1.5 px-2 rounded-xl transition-all ${
+                isActive ? "text-primary" : "text-on-surface-variant/60"
               }`}
             >
-              <span className={`material-symbols-outlined ${isActive ? "filled" : ""}`} style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>
+              <span className="material-symbols-outlined text-xl" style={isActive ? { fontVariationSettings: "'FILL' 1" } : {}}>
                 {link.icon}
               </span>
-              <span className="text-[10px] font-semibold mt-1">{link.name}</span>
+              <span className="text-[9px] font-semibold mt-0.5 tracking-wide">{link.name}</span>
             </Link>
           );
         })}

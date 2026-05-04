@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useBranch } from "@/components/branch-context";
 import { supabase } from "@/lib/supabase";
 
@@ -11,10 +12,11 @@ export default function SeatingPage() {
   const [seatMap, setSeatMap] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
   const [unassignedMembers, setUnassignedMembers] = useState<any[]>([]);
-  
-  // Modals state
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
+
+  const occupiedCount = Object.keys(seatMap).length;
+  const availableCount = seats - occupiedCount;
 
   useEffect(() => {
     const fetchSeats = async () => {
@@ -50,7 +52,6 @@ export default function SeatingPage() {
     setIsAssigning(true);
     await supabase.from('members').update({ seat_no: selectedSeat }).eq('id', memberId);
     
-    // Optimistic update
     const member = unassignedMembers.find(m => m.id === memberId);
     if (member) {
       setSeatMap(prev => {
@@ -83,116 +84,143 @@ export default function SeatingPage() {
     
     setIsAssigning(false);
   };
+
+  const getSeatStyle = (seatId: string) => {
+    const occupants = seatMap[seatId] || [];
+    if (occupants.length === 0) return { bg: 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20', dot: '' };
+    if (occupants.length === 2) return { bg: 'bg-gradient-to-br from-amber-500/30 to-purple-500/30 border-amber-500/20', dot: 'bg-amber-400' };
+    const shift = occupants[0].shift;
+    if (shift === 'Full Day') return { bg: 'bg-emerald-500/20 border-emerald-500/20', dot: 'bg-emerald-400' };
+    if (shift === 'Morning') return { bg: 'bg-amber-500/20 border-amber-500/20', dot: 'bg-amber-400' };
+    if (shift === 'Evening') return { bg: 'bg-purple-500/20 border-purple-500/20', dot: 'bg-purple-400' };
+    return { bg: 'bg-white/[0.04] border-white/[0.08]', dot: '' };
+  };
   
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header */}
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold font-manrope text-white mb-2">Smart Seating Grid</h1>
-          <p className="text-on-surface-variant font-body-md">{branchName} Branch ({seats} Total Seats)</p>
+          <h1 className="page-title">Seat Map</h1>
+          <p className="page-subtitle">{branchName} Branch · {seats} Total Seats</p>
         </div>
-        <div className="flex flex-wrap gap-4 text-xs font-bold text-white bg-surface-container/50 p-4 rounded-xl border border-white/5">
-          <div className="flex items-center gap-2"><div className="w-4 h-4 bg-red-500 rounded-sm"></div>Unreserved</div>
-          <div className="flex items-center gap-2"><div className="w-4 h-4 bg-green-500 rounded-sm"></div>Full Day (7 AM - 10 PM)</div>
-          <div className="flex items-center gap-2"><div className="w-4 h-4 bg-yellow-500 rounded-sm"></div>Morning (7 AM - 3 PM)</div>
-          <div className="flex items-center gap-2"><div className="w-4 h-4 bg-purple-500 rounded-sm"></div>Evening (3 PM - 10 PM)</div>
+        <div className="flex gap-3">
+          <div className="card-premium !p-3 text-center min-w-[90px]">
+            <div className="text-lg font-black text-emerald-400">{occupiedCount}</div>
+            <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Occupied</div>
+          </div>
+          <div className="card-premium !p-3 text-center min-w-[90px]">
+            <div className="text-lg font-black text-red-400">{availableCount}</div>
+            <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Available</div>
+          </div>
+          {unassignedMembers.length > 0 && (
+            <div className="card-premium !p-3 text-center min-w-[90px] !border-tertiary/20">
+              <div className="text-lg font-black text-tertiary">{unassignedMembers.length}</div>
+              <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Unassigned</div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-4 text-xs font-medium text-on-surface-variant bg-white/[0.02] border border-white/[0.06] p-3 px-4 rounded-xl">
+        <div className="flex items-center gap-2"><div className="w-3 h-3 bg-red-500/30 rounded border border-red-500/20" />Available</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 bg-emerald-500/30 rounded border border-emerald-500/20" />Full Day</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 bg-amber-500/30 rounded border border-amber-500/20" />Morning</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 bg-purple-500/30 rounded border border-purple-500/20" />Evening</div>
+      </div>
       
-      <div className="glass-pane p-8 rounded-3xl border border-white/5 overflow-x-auto relative">
+      {/* Seat Grid */}
+      <div className="card-premium overflow-x-auto relative">
         {loading && (
-          <div className="absolute inset-0 z-10 bg-surface/50 backdrop-blur-sm flex items-center justify-center rounded-3xl">
-            <span className="material-symbols-outlined animate-spin text-4xl text-primary">sync</span>
+          <div className="absolute inset-0 z-10 bg-surface/60 backdrop-blur-sm flex items-center justify-center rounded-2xl">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined animate-spin text-2xl text-primary">progress_activity</span>
+              <span className="text-sm font-medium text-on-surface-variant">Loading seat data...</span>
+            </div>
           </div>
         )}
-        <div className="grid grid-cols-10 md:grid-cols-12 lg:grid-cols-15 gap-3 min-w-[600px]">
+        <div className="grid grid-cols-10 md:grid-cols-12 lg:grid-cols-15 gap-2 min-w-[600px]">
           {[...Array(seats)].map((_, i) => {
             const seatId = (i + 1).toString();
+            const style = getSeatStyle(seatId);
             const occupants = seatMap[seatId] || [];
-            
-            let color = 'bg-red-500'; // Unreserved by default
-            let title = `Seat ${seatId} Available`;
-            
-            if (occupants.length === 2) {
-              // Both shifts occupied
-              color = 'bg-gradient-to-br from-yellow-500 to-purple-500 border border-white/20';
-              title = `${seatId}: Morning & Evening Occupied`;
-            } else if (occupants.length === 1) {
-              const shift = occupants[0].shift;
-              if (shift === 'Full Day') { color = 'bg-green-500'; title = `${seatId}: ${occupants[0].full_name} (Full Day)`; }
-              else if (shift === 'Morning') { color = 'bg-yellow-500'; title = `${seatId}: ${occupants[0].full_name} (Morning Only)`; }
-              else if (shift === 'Evening') { color = 'bg-purple-500'; title = `${seatId}: ${occupants[0].full_name} (Evening Only)`; }
-            }
+            const isSelected = selectedSeat === seatId;
             
             return (
-              <div 
-                key={i} 
+              <button
+                key={i}
                 onClick={() => setSelectedSeat(seatId)}
-                className={`aspect-square ${color} rounded-lg shadow-[inset_0_0_10px_rgba(0,0,0,0.2)] flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity hover:scale-105 transform group relative`}
-                title={title}
+                className={`aspect-square ${style.bg} rounded-lg border flex flex-col items-center justify-center cursor-pointer transition-all hover:scale-105 ${
+                  isSelected ? 'ring-2 ring-primary ring-offset-1 ring-offset-surface scale-105' : ''
+                }`}
+                title={occupants.length > 0 ? `${seatId}: ${occupants.map(o => o.full_name).join(', ')}` : `Seat ${seatId} — Available`}
               >
-                <span className="text-[10px] font-bold text-white mix-blend-overlay opacity-80">{seatId}</span>
-              </div>
+                <span className="text-[10px] font-bold text-white/50">{seatId}</span>
+                {style.dot && <span className={`w-1.5 h-1.5 rounded-full ${style.dot} mt-0.5`} />}
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/* Seat Management Modal */}
-      {selectedSeat && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedSeat(null)}>
-          <div className="glass-pane border border-white/10 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-surface-container-low/50">
-              <h2 className="text-xl font-bold text-white font-manrope flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">event_seat</span>
-                Seat Management: #{selectedSeat}
+      {/* ═══ Seat Management Modal ═══ */}
+      {selectedSeat && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-surface-container-lowest/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setSelectedSeat(null)}>
+          <div className="glass-pane-elevated rounded-2xl w-full max-w-md overflow-hidden animate-scale-in" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-white/[0.06] flex justify-between items-center bg-white/[0.02]">
+              <h2 className="text-base font-bold text-white font-manrope flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-lg">event_seat</span>
+                Seat #{selectedSeat}
               </h2>
-              <button onClick={() => setSelectedSeat(null)} className="text-on-surface-variant hover:text-white">
-                <span className="material-symbols-outlined">close</span>
+              <button onClick={() => setSelectedSeat(null)} className="text-on-surface-variant hover:text-white p-1.5 rounded-lg hover:bg-white/[0.04] transition-all">
+                <span className="material-symbols-outlined text-lg">close</span>
               </button>
             </div>
             
-            <div className="p-6">
+            <div className="p-5">
               {seatMap[selectedSeat] && seatMap[selectedSeat].length > 0 ? (
-                // Seat is Occupied
-                <div className="space-y-4">
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Current Occupants</h4>
                   {seatMap[selectedSeat].map(member => (
-                    <div key={member.id} className="bg-surface-container-highest p-4 rounded-2xl flex justify-between items-center border border-white/5">
+                    <div key={member.id} className="bg-white/[0.03] p-3.5 rounded-xl flex justify-between items-center border border-white/[0.06]">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm border border-primary/15">
                           {member.full_name.charAt(0)}
                         </div>
                         <div>
-                          <div className="text-white font-bold">{member.full_name}</div>
-                          <div className="text-xs text-on-surface-variant">{member.permanent_id} • <span className="text-primary font-bold">{member.shift}</span></div>
+                          <div className="text-white font-semibold text-sm">{member.full_name}</div>
+                          <div className="text-xs text-on-surface-variant">{member.permanent_id} · <span className="text-primary font-medium">{member.shift}</span></div>
                         </div>
                       </div>
                       <button 
                         disabled={isAssigning}
                         onClick={() => handleUnassignSeat(member.id, selectedSeat)}
-                        className="bg-error/20 text-error hover:bg-error hover:text-white transition-colors p-2 rounded-lg font-bold flex justify-center items-center disabled:opacity-50"
-                        title="Un-assign Seat"
+                        className="btn-danger !p-2 !rounded-lg disabled:opacity-50"
+                        title="Remove from seat"
                       >
-                        {isAssigning ? <span className="material-symbols-outlined animate-spin text-sm">sync</span> : <span className="material-symbols-outlined text-sm">person_remove</span>}
+                        {isAssigning ? <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span> : <span className="material-symbols-outlined text-sm">person_remove</span>}
                       </button>
                     </div>
                   ))}
 
-                  {/* Show assignment options if seat is partially occupied (e.g., Morning only) */}
+                  {/* Partial occupancy — show compatible members */}
                   {seatMap[selectedSeat].length === 1 && seatMap[selectedSeat][0].shift !== 'Full Day' && (
-                    <div className="mt-6 border-t border-white/10 pt-4">
-                      <h4 className="text-xs font-bold text-tertiary mb-3 uppercase">Slot Available: {seatMap[selectedSeat][0].shift === 'Morning' ? 'Evening' : 'Morning'}</h4>
-                      <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                    <div className="mt-4 pt-4 border-t border-white/[0.06]">
+                      <h4 className="text-xs font-bold text-tertiary mb-2 uppercase tracking-widest">
+                        Available Slot: {seatMap[selectedSeat][0].shift === 'Morning' ? 'Evening' : 'Morning'}
+                      </h4>
+                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                         {unassignedMembers.filter(m => m.shift === (seatMap[selectedSeat][0].shift === 'Morning' ? 'Evening' : 'Morning')).length === 0 ? (
-                          <div className="text-xs text-on-surface-variant italic">No compatible members available to share this seat.</div>
+                          <div className="text-xs text-on-surface-variant italic p-3 bg-white/[0.02] rounded-lg text-center">No compatible members available.</div>
                         ) : (
                           unassignedMembers.filter(m => m.shift === (seatMap[selectedSeat][0].shift === 'Morning' ? 'Evening' : 'Morning')).map(m => (
-                            <div key={m.id} className="flex justify-between items-center bg-surface-container p-2 rounded-xl border border-white/5 hover:bg-white/5 transition-colors">
+                            <div key={m.id} className="flex justify-between items-center bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04] hover:bg-white/[0.04] transition-colors group">
                               <div>
-                                <div className="text-white font-bold text-xs">{m.full_name}</div>
+                                <div className="text-white font-semibold text-xs">{m.full_name}</div>
                                 <div className="text-[10px] text-on-surface-variant">{m.shift}</div>
                               </div>
-                              <button disabled={isAssigning} onClick={() => handleAssignSeat(m.id)} className="bg-primary/20 text-primary px-2 py-1 rounded text-xs font-bold disabled:opacity-50">Assign</button>
+                              <button disabled={isAssigning} onClick={() => handleAssignSeat(m.id)} className="bg-primary/15 text-primary px-2.5 py-1 rounded-lg text-xs font-semibold disabled:opacity-50 hover:bg-primary hover:text-on-primary transition-all border border-primary/20">Assign</button>
                             </div>
                           ))
                         )}
@@ -201,27 +229,27 @@ export default function SeatingPage() {
                   )}
                 </div>
               ) : (
-                // Seat is Empty
                 <div>
-                  <h3 className="text-sm font-bold text-on-surface-variant mb-4 uppercase tracking-wider">Unassigned Members</h3>
+                  <h3 className="text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-widest">Assign a Member</h3>
                   {unassignedMembers.length === 0 ? (
-                    <div className="text-center py-8 text-on-surface-variant">
-                      No active members require seat assignment.
+                    <div className="empty-state !py-8">
+                      <span className="material-symbols-outlined text-3xl text-on-surface-variant/30 mb-2">check_circle</span>
+                      <div className="text-sm text-on-surface-variant">All members have seats assigned.</div>
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                       {unassignedMembers.map(m => (
-                        <div key={m.id} className="flex justify-between items-center bg-surface-container p-3 rounded-xl border border-white/5 hover:bg-white/5 transition-colors group">
+                        <div key={m.id} className="flex justify-between items-center bg-white/[0.02] p-3 rounded-xl border border-white/[0.04] hover:bg-white/[0.04] transition-colors group">
                           <div>
-                            <div className="text-white font-bold text-sm">{m.full_name}</div>
-                            <div className="text-xs text-on-surface-variant">{m.permanent_id} • {m.shift}</div>
+                            <div className="text-white font-semibold text-sm">{m.full_name}</div>
+                            <div className="text-xs text-on-surface-variant">{m.permanent_id} · {m.shift}</div>
                           </div>
                           <button 
                             disabled={isAssigning}
                             onClick={() => handleAssignSeat(m.id)}
-                            className="bg-primary/20 text-primary group-hover:bg-primary group-hover:text-white transition-colors px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50"
+                            className="bg-primary/15 text-primary group-hover:bg-primary group-hover:text-on-primary transition-all px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50 border border-primary/20 group-hover:border-primary"
                           >
-                            Assign Here
+                            Assign
                           </button>
                         </div>
                       ))}
@@ -231,7 +259,8 @@ export default function SeatingPage() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

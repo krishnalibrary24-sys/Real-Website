@@ -145,7 +145,7 @@ export default function InvoicesPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button
-                          onClick={() => window.open(`/dashboard/invoice?id=${m.id}`, '_blank')}
+                          onClick={() => window.open(`/invoice?id=${m.id}`, '_blank')}
                           className="bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-1 ml-auto"
                         >
                           <span className="material-symbols-outlined text-sm">print</span>

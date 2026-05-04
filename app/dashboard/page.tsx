@@ -1,8 +1,9 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useBranch } from "@/components/branch-context";
 import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const [role, setRole] = useState<string | null>(null);
@@ -23,168 +24,203 @@ export default function DashboardPage() {
   const isAdmin = role === "admin";
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="space-y-8 animate-fade-in">
+      {/* Page Header */}
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-display-lg text-white font-bold mb-1">
-            {isAdmin ? "Global Overview" : "Command Center"}
+          <h1 className="page-title">
+            {isAdmin ? "Dashboard" : "Command Center"}
           </h1>
-          <p className="text-on-surface-variant font-body-md">
+          <p className="page-subtitle">
             {isAdmin 
-              ? "Monitor all branches and revenue streams from a single vantage point." 
+              ? "Monitor all branches and revenue streams." 
               : "Manage daily operations, seating, and student lifecycle."}
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="glass-pane px-4 py-2 rounded-xl text-sm font-semibold hover:bg-white/5 transition-colors flex items-center gap-2">
-            <span className="material-symbols-outlined text-sm">download</span>
-            Export Report
+          <button className="btn-ghost px-4 py-2.5 text-sm flex items-center gap-2">
+            <span className="material-symbols-outlined text-base">download</span>
+            Export
           </button>
           {!isAdmin && (
-            <button className="bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-bold glow-blue hover:scale-105 transition-transform flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">person_add</span>
-              Add Member
-            </button>
+            <Link href="/dashboard/admission" className="btn-primary px-4 py-2.5 text-sm flex items-center gap-2">
+              <span className="material-symbols-outlined text-base">person_add</span>
+              New Admission
+            </Link>
           )}
         </div>
-      </header>
+      </div>
 
       {isAdmin ? <AdminDashboard activeBranch={activeBranch} /> : <OfficeDashboard branch={activeBranch} />}
     </div>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════
+   ADMIN DASHBOARD
+   ═══════════════════════════════════════════════════════════ */
 function AdminDashboard({ activeBranch }: { activeBranch: string }) {
-  // Mock data changes based on branch selection
-  const isAll = activeBranch === 'all';
-  const rev = activeBranch === 'bengali-chowk' ? '₹8,50,000' : '₹6,00,000';
-  const dues = activeBranch === 'bengali-chowk' ? '₹25,200' : '₹20,000';
-  const members = activeBranch === 'bengali-chowk' ? '468' : '374';
   const branchName = activeBranch === 'namnakala' ? 'Namnakala' : 'Bengali Chowk';
+
+  const [stats, setStats] = useState({
+    revenue: '—', dues: '—', members: '—', occupancy: 0,
+    bcMembers: 0, nmMembers: 0, totalSeats: 273,
+    fullDayPct: 0, halfDayPct: 0, fullDayCount: 0, halfDayCount: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchAdminStats() {
+      setLoading(true);
+      try {
+        const { data: members } = await supabase
+          .from('members')
+          .select('branch, is_active, plan_amount, subscription_end_date')
+          .eq('branch', activeBranch);
+        
+        if (members) {
+          const active = members.filter(m => m.is_active);
+          const totalRevenue = active.reduce((sum, m) => sum + (m.plan_amount || 0), 0);
+          const now = new Date();
+          const overdue = members.filter(m => !m.is_active);
+          const overdueAmount = overdue.reduce((sum, m) => sum + (m.plan_amount || 0), 0);
+
+          const { data: bcData } = await supabase.from('members').select('id').eq('branch', 'bengali-chowk').eq('is_active', true);
+          const { data: nmData } = await supabase.from('members').select('id').eq('branch', 'namnakala').eq('is_active', true);
+
+          const fullDayCount = active.filter(m => m.plan_amount >= 1000).length;
+          const halfDayCount = active.filter(m => m.plan_amount && m.plan_amount < 1000).length;
+          const totalActive = active.length || 1; // Prevent div by 0
+
+          setStats({
+            revenue: `₹${totalRevenue.toLocaleString('en-IN')}`,
+            dues: `₹${overdueAmount.toLocaleString('en-IN')}`,
+            members: active.length.toString(),
+            occupancy: Math.round((active.length / (activeBranch === 'bengali-chowk' ? 153 : 120)) * 100),
+            bcMembers: bcData?.length || 0,
+            nmMembers: nmData?.length || 0,
+            totalSeats: 273,
+            fullDayCount,
+            halfDayCount,
+            fullDayPct: Math.round((fullDayCount / totalActive) * 100),
+            halfDayPct: Math.round((halfDayCount / totalActive) * 100)
+          });
+        }
+      } catch (err) {
+        console.error("Stats fetch error:", err);
+      }
+      setLoading(false);
+    }
+    fetchAdminStats();
+  }, [activeBranch]);
+
   return (
-    <div className="space-y-8">
-      {/* Top Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-pane p-6 rounded-3xl border border-white/5 relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-xl group-hover:bg-primary/20 transition-all"></div>
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center border border-white/5 text-primary">
-              <span className="material-symbols-outlined">payments</span>
-            </div>
-            <span className="bg-green-500/10 text-green-400 text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1">
-              <span className="material-symbols-outlined text-[10px]">trending_up</span> +12%
-            </span>
+    <div className="space-y-6 animate-fade-in-fast">
+      {/* ─── Stat Cards ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon="payments" iconClass="stat-icon-primary" label={`Revenue · ${branchName}`}
+          value={loading ? null : stats.revenue}
+          trend="+12%" trendUp={true}
+        />
+        <StatCard
+          icon="warning" iconClass="stat-icon-danger" label={`Pending Dues · ${branchName}`}
+          value={loading ? null : stats.dues}
+          badge="Action Required" badgeClass="badge-danger"
+        />
+        <StatCard
+          icon="group" iconClass="stat-icon-primary" label={`Active Members · ${branchName}`}
+          value={loading ? null : stats.members}
+        />
+        <StatCard
+          icon="speed" iconClass="stat-icon-warning" label={`Occupancy · ${branchName}`}
+          value={loading ? null : `${stats.occupancy}%`}
+          progressValue={stats.occupancy}
+        />
+      </div>
+
+      {/* ─── Charts Row ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue Split */}
+        <div className="glass-pane-elevated">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-base font-bold text-white font-manrope">Branch Revenue Split</h3>
+            <button className="text-primary text-xs font-semibold hover:underline">View Details →</button>
           </div>
-          <p className="text-on-surface-variant text-sm font-semibold mb-1">Total Revenue ({branchName})</p>
-          <h3 className="text-3xl font-black text-white">{rev}</h3>
+          <div className="space-y-5">
+            <BranchBar name="Bengali Chowk" color="bg-primary" members={stats.bcMembers} total={153} />
+            <BranchBar name="Namnakala" color="bg-tertiary" members={stats.nmMembers} total={120} />
+          </div>
         </div>
 
-        <div className="glass-pane p-6 rounded-3xl border border-white/5 relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-secondary-container/10 rounded-full blur-xl group-hover:bg-secondary-container/20 transition-all"></div>
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="w-12 h-12 rounded-xl bg-error-container/20 flex items-center justify-center border border-error/10 text-secondary-container">
-              <span className="material-symbols-outlined">warning</span>
-            </div>
-            <span className="bg-error/10 text-error text-xs font-bold px-2 py-1 rounded-lg">Action Required</span>
+        {/* Subscription Breakdown */}
+        <div className="glass-pane-elevated flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-base font-bold text-white font-manrope">Subscription Types</h3>
           </div>
-          <p className="text-error text-sm font-bold mb-1">Global Due Tracker ({branchName})</p>
-          <h3 className="text-3xl font-black text-white">{dues}</h3>
-          <p className="text-xs text-on-surface-variant mt-2">Active alerts across this branch.</p>
-        </div>
-
-        <div className="glass-pane p-6 rounded-3xl border border-white/5 relative overflow-hidden group">
-          <div className="flex justify-between items-start mb-4 relative z-10">
-            <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center border border-white/5 text-tertiary">
-              <span className="material-symbols-outlined">group</span>
+          <div className="flex items-center justify-center gap-10 flex-1">
+            <div className="relative w-28 h-28">
+              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90 drop-shadow-md">
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f97316" strokeWidth="3" strokeDasharray={`${stats.fullDayPct} ${100 - stats.fullDayPct}`} strokeLinecap="round" className="transition-all duration-700 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f59e0b" strokeWidth="3" strokeDasharray={`${stats.halfDayPct} ${100 - stats.halfDayPct}`} strokeDashoffset={`-${stats.fullDayPct}`} strokeLinecap="round" className="transition-all duration-700 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-lg font-black text-white">{loading ? '...' : '100%'}</span>
+                <span className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider">Active</span>
+              </div>
             </div>
-          </div>
-          <p className="text-on-surface-variant text-sm font-semibold mb-1">Active Members ({branchName})</p>
-          <h3 className="text-3xl font-black text-white">{members}</h3>
-          <div className="mt-4 flex h-2 rounded-full overflow-hidden bg-surface-container-highest">
-            <div className="bg-primary w-[55%]" title="Bengali Chowk"></div>
-            <div className="bg-tertiary w-[45%]" title="Namnakala"></div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-sm bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]" />
+                <div>
+                  <div className="text-white font-semibold text-sm">Full Day</div>
+                  <div className="text-xs text-on-surface-variant">{loading ? '...' : `${stats.fullDayPct}% (${stats.fullDayCount} students)`}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-sm bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+                <div>
+                  <div className="text-white font-semibold text-sm">Half Day</div>
+                  <div className="text-xs text-on-surface-variant">{loading ? '...' : `${stats.halfDayPct}% (${stats.halfDayCount} students)`}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Branch Breakdown & Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-pane p-6 rounded-3xl border border-white/5">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-white font-manrope">Branch Revenue Split</h3>
-            <button className="text-primary text-sm font-semibold hover:underline">View Details</button>
-          </div>
-          <div className="space-y-6">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-semibold text-white flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-primary"></span> Bengali Chowk</span>
-                <span className="font-bold text-white">₹8,50,000</span>
-              </div>
-              <div className="h-4 bg-surface-container-highest rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full w-[60%]"></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-semibold text-white flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-secondary-container glow-red"></span> Namnakala</span>
-                <span className="font-bold text-white">₹6,00,000</span>
-              </div>
-              <div className="h-4 bg-surface-container-highest rounded-full overflow-hidden">
-                <div className="h-full bg-secondary-container rounded-full w-[40%]"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="glass-pane p-6 rounded-3xl border border-white/5 flex flex-col justify-between">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-white font-manrope">Subscription Types</h3>
-          </div>
-          <div className="flex items-center justify-center gap-8 flex-1">
-            {/* Simple CSS Donut Chart representation */}
-            <div className="relative w-32 h-32 rounded-full flex items-center justify-center" style={{ background: 'conic-gradient(var(--tw-colors-primary) 0% 65%, var(--tw-colors-tertiary) 65% 100%)' }}>
-              <div className="absolute inset-2 bg-surface rounded-full"></div>
-              <div className="relative z-10 text-center">
-                <div className="text-2xl font-black text-white">100%</div>
-                <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider">Active</div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded bg-primary"></div>
-                <div>
-                  <div className="text-white font-bold text-sm">Full Day (₹1000)</div>
-                  <div className="text-xs text-on-surface-variant">65% of students</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded bg-tertiary"></div>
-                <div>
-                  <div className="text-white font-bold text-sm">Half Shift (₹600)</div>
-                  <div className="text-xs text-on-surface-variant">35% of students</div>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* ─── Quick Actions ─── */}
+      <div className="glass-pane-elevated">
+        <h3 className="text-base font-bold text-white font-manrope mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <QuickAction href="/dashboard/admission" icon="person_add" label="New Admission" color="text-primary" />
+          <QuickAction href="/dashboard/members" icon="school" label="Student Directory" color="text-tertiary" />
+          <QuickAction href="/dashboard/dues" icon="account_balance_wallet" label="Dues Tracker" color="text-red-400" />
+          <QuickAction href="/dashboard/seating" icon="grid_view" label="Seat Map" color="text-emerald-400" />
         </div>
       </div>
     </div>
   );
 }
 
+/* ═══════════════════════════════════════════════════════════
+   OFFICE DASHBOARD
+   ═══════════════════════════════════════════════════════════ */
 function OfficeDashboard({ branch }: { branch: string }) {
-  const branchName = branch === "namnakala" ? "Namnakala Branch" : "Bengali Chowk Branch";
+  const branchName = branch === "namnakala" ? "Namnakala" : "Bengali Chowk";
   
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dueSoon, setDueSoon] = useState(0);
   const [overdueCount, setOverdueCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
 
   useEffect(() => {
     const fetchLiveMembers = async () => {
       setLoading(true);
       
-      // Lazy Evaluation for Defaulters (Future Plan 1)
+      // Auto-eviction of expired members
       try {
         const { data: expired } = await supabase
           .from('members')
@@ -195,15 +231,12 @@ function OfficeDashboard({ branch }: { branch: string }) {
 
         if (expired && expired.length > 0) {
           const ids = expired.map(e => e.id);
-          // Automatically evict them and mark as inactive
           await supabase.from('members').update({ is_active: false, seat_no: null }).in('id', ids);
-          console.log(`Auto-evicted ${ids.length} defaulters.`);
         }
       } catch (err) {
         console.error("Auto-eviction failed", err);
       }
 
-      // Fetch ALL active members for this branch (no limit for stats)
       const { data, error } = await supabase
         .from('members')
         .select('*')
@@ -214,19 +247,19 @@ function OfficeDashboard({ branch }: { branch: string }) {
         const now = new Date();
         const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
         
-        // Count active members expiring within 3 days (but not yet expired)
         const dueSoonCount = data.filter(m => {
           if (!m.is_active || !m.subscription_end_date) return false;
           const end = new Date(m.subscription_end_date);
           return end >= now && end <= in3Days;
         }).length;
 
-        // Count inactive members (expired/defaulters)
         const defaulterCount = data.filter(m => !m.is_active).length;
+        const activeMembers = data.filter(m => m.is_active);
         
         setDueSoon(dueSoonCount);
         setOverdueCount(defaulterCount);
-        setMembers(data.filter(m => m.is_active).slice(0, 10)); // Show top 10 active in table
+        setActiveCount(activeMembers.length);
+        setMembers(activeMembers.slice(0, 10));
       } else if (error) {
         console.error("Error fetching members:", error);
       }
@@ -237,96 +270,100 @@ function OfficeDashboard({ branch }: { branch: string }) {
   }, [branch]);
 
   return (
-    <div className="space-y-8">
-      {/* Quick Actions / Status Tabs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-surface-container/50 hover:bg-surface-container p-4 rounded-2xl border border-white/5 cursor-pointer transition-all text-center">
-          <span className="material-symbols-outlined text-primary text-3xl mb-2">person_add</span>
-          <div className="text-white font-bold text-sm">New Admission</div>
-        </div>
-        <div className="bg-surface-container/50 hover:bg-surface-container p-4 rounded-2xl border border-white/5 cursor-pointer transition-all text-center">
-          <span className="material-symbols-outlined text-tertiary text-3xl mb-2">event_upcoming</span>
-          <div className="text-white font-bold text-sm">Due in 3 Days {dueSoon > 0 && <span className="bg-tertiary/20 text-tertiary px-2 py-0.5 rounded-full text-xs ml-1">{dueSoon}</span>}{dueSoon === 0 && <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-xs ml-1">0</span>}</div>
-        </div>
-        <div className="bg-error/10 hover:bg-error/20 p-4 rounded-2xl border border-error/20 cursor-pointer transition-all text-center glow-red relative overflow-hidden">
-          <span className="material-symbols-outlined text-error text-3xl mb-2 animate-pulse">warning</span>
-          <div className="text-error font-bold text-sm">Overdue / Inactive {overdueCount > 0 ? <span className="bg-error text-white px-2 py-0.5 rounded-full text-xs ml-1">{overdueCount}</span> : <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-xs ml-1">0</span>}</div>
-        </div>
-        <div className="bg-surface-container/50 hover:bg-surface-container p-4 rounded-2xl border border-white/5 cursor-pointer transition-all text-center">
-          <span className="material-symbols-outlined text-secondary text-3xl mb-2">grid_view</span>
-          <div className="text-white font-bold text-sm">Manage Seating</div>
-        </div>
+    <div className="space-y-6">
+      {/* ─── Stat Cards ─── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard icon="group" iconClass="stat-icon-primary" label="Active Members" value={loading ? null : activeCount.toString()} />
+        <StatCard icon="event_upcoming" iconClass="stat-icon-warning" label="Due in 3 Days" value={loading ? null : dueSoon.toString()} />
+        <StatCard 
+          icon="warning" iconClass="stat-icon-danger" label="Overdue / Inactive" 
+          value={loading ? null : overdueCount.toString()} 
+          badge={overdueCount > 0 ? "Action Required" : undefined} badgeClass="badge-danger"
+        />
+        <StatCard icon="event_seat" iconClass="stat-icon-success" label="Available Seats" value={loading ? null : ((branch === 'bengali-chowk' ? 153 : 120) - activeCount).toString()} />
       </div>
 
-      {/* Booking List Table */}
-      <div className="glass-pane rounded-3xl border border-white/5 overflow-hidden flex flex-col h-[500px]">
-        <div className="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 bg-surface-container-low/50">
-          <h3 className="text-xl font-bold text-white font-manrope">Active Members ({branchName})</h3>
-          <div className="relative w-full md:w-64">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+      {/* ─── Quick Actions ─── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <QuickAction href="/dashboard/admission" icon="person_add" label="New Admission" color="text-primary" />
+        <QuickAction href="/dashboard/dues" icon="event_upcoming" label="Due Tracker" color="text-tertiary" />
+        <QuickAction href="/dashboard/dues" icon="warning" label="Defaulters" color="text-red-400" />
+        <QuickAction href="/dashboard/seating" icon="grid_view" label="Seat Map" color="text-emerald-400" />
+      </div>
+
+      {/* ─── Active Members Table ─── */}
+      <div className="glass-pane-elevated !p-0 overflow-hidden flex flex-col" style={{ height: 'clamp(400px, 50vh, 600px)' }}>
+        <div className="px-6 py-4 border-b border-white/[0.06] flex flex-col md:flex-row justify-between items-center gap-3 bg-white/[0.02]">
+          <h3 className="text-base font-bold text-white font-manrope">Active Members — {branchName}</h3>
+          <div className="relative w-full md:w-56">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/60 text-sm">search</span>
             <input 
               type="text" 
-              placeholder="Search ID, Name, Phone..." 
-              className="w-full bg-background border border-white/10 rounded-lg py-2 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors"
+              placeholder="Search..." 
+              className="input-premium !py-2 !pl-9 !pr-4 !text-sm !rounded-lg"
             />
           </div>
         </div>
         
         <div className="flex-1 overflow-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-surface-container sticky top-0 z-10 text-on-surface-variant text-xs uppercase tracking-wider font-semibold">
+          <table className="w-full text-left text-sm whitespace-nowrap table-premium">
+            <thead className="sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-4">ID</th>
-                <th className="px-6 py-4">Details</th>
-                <th className="px-6 py-4">Assignment</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th>ID</th>
+                <th>Details</th>
+                <th>Assignment</th>
+                <th>Status</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-on-surface-variant">
-                    <span className="material-symbols-outlined animate-spin text-2xl">sync</span>
-                    <div className="mt-2 text-sm font-semibold">Loading Live Data...</div>
-                  </td>
-                </tr>
+                [...Array(5)].map((_, i) => (
+                  <tr key={i}>
+                    <td><div className="skeleton h-5 w-20" /></td>
+                    <td><div className="skeleton h-5 w-32" /></td>
+                    <td><div className="skeleton h-5 w-16" /></td>
+                    <td><div className="skeleton h-5 w-14" /></td>
+                    <td><div className="skeleton h-5 w-8 ml-auto" /></td>
+                  </tr>
+                ))
               ) : members.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-on-surface-variant font-semibold">
-                    No active bookings found for this branch.
+                  <td colSpan={5}>
+                    <div className="empty-state">
+                      <span className="material-symbols-outlined empty-state-icon">group_off</span>
+                      <div className="empty-state-title">No Active Members</div>
+                      <div className="empty-state-desc">No active bookings found for this branch.</div>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 members.map((member) => (
-                  <tr key={member.id} className="hover:bg-white/[0.02] transition-colors group cursor-pointer">
-                    <td className="px-6 py-4">
-                      <span className="text-primary font-bold bg-primary/10 px-2 py-1 rounded">{member.permanent_id}</span>
+                  <tr key={member.id} className="cursor-pointer group">
+                    <td>
+                      <span className="badge badge-info">{member.permanent_id}</span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td>
                       <div className="text-white font-semibold">{member.full_name}</div>
                       <div className="text-xs text-on-surface-variant mt-0.5">{member.mobile}</div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td>
                       <div className="flex items-center gap-2">
-                        <span className="w-8 h-8 rounded-md bg-green-500/20 text-green-500 flex items-center justify-center font-bold text-xs border border-green-500/30">
-                          {member.seat_no}
+                        <span className="w-7 h-7 rounded-md bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/20">
+                          {member.seat_no || '—'}
                         </span>
-                        <span className="text-white text-xs">{member.shift}</span>
+                        <span className="text-white/70 text-xs">{member.shift}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <button className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${member.is_active ? 'bg-primary' : 'bg-surface-container-highest'}`}>
-                        <span className={`inline-block h-3 w-3 rounded-full bg-white transition-transform ${member.is_active ? 'translate-x-5' : 'translate-x-1'}`}></span>
-                      </button>
-                      <span className="text-xs text-on-surface-variant ml-2">{member.is_active ? 'Active' : 'Inactive'}</span>
+                    <td>
+                      <span className={`badge ${member.is_active ? 'badge-success' : 'badge-danger'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${member.is_active ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                        {member.is_active ? 'Active' : 'Inactive'}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-on-surface-variant hover:text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="material-symbols-outlined text-lg">edit</span>
-                      </button>
-                      <button className="text-on-surface-variant hover:text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="material-symbols-outlined text-lg">more_vert</span>
+                    <td className="text-right">
+                      <button className="text-on-surface-variant hover:text-white p-1.5 rounded-lg hover:bg-white/[0.04] opacity-0 group-hover:opacity-100 transition-all">
+                        <span className="material-symbols-outlined text-base">more_horiz</span>
                       </button>
                     </td>
                   </tr>
@@ -337,5 +374,85 @@ function OfficeDashboard({ branch }: { branch: string }) {
         </div>
       </div>
     </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   REUSABLE COMPONENTS
+   ═══════════════════════════════════════════════════════════ */
+
+function StatCard({ icon, iconClass, label, value, trend, trendUp, badge, badgeClass, progressValue }: {
+  icon: string; iconClass: string; label: string; value: string | null;
+  trend?: string; trendUp?: boolean; badge?: string; badgeClass?: string; progressValue?: number;
+}) {
+  return (
+    <div className="glass-pane-elevated relative overflow-hidden flex flex-col items-center text-center !p-6 group">
+      {/* Edge Ovals / Ambient Light */}
+      <div className="absolute -left-8 -top-8 w-32 h-32 rounded-[100%] blur-[40px] opacity-20 group-hover:opacity-40 transition-opacity" style={{ background: iconClass.includes('primary') ? '#bfc2ff' : iconClass.includes('danger') ? '#ff5540' : iconClass.includes('warning') ? '#e9c400' : '#4ade80' }} />
+      <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-[100%] blur-[40px] opacity-10 group-hover:opacity-30 transition-opacity" style={{ background: iconClass.includes('primary') ? '#bfc2ff' : iconClass.includes('danger') ? '#ff5540' : iconClass.includes('warning') ? '#e9c400' : '#4ade80' }} />
+      
+      <div className="relative z-10 flex flex-col items-center w-full">
+        {/* Top Badges (floating right) */}
+        <div className="absolute -right-2 -top-2 flex gap-2">
+          {trend && (
+            <span className={`badge ${trendUp ? 'badge-success' : 'badge-danger'}`}>
+              <span className="material-symbols-outlined text-[10px]">{trendUp ? 'trending_up' : 'trending_down'}</span>
+              {trend}
+            </span>
+          )}
+          {badge && <span className={`badge ${badgeClass}`}>{badge}</span>}
+        </div>
+
+        <div className={`stat-icon ${iconClass} shadow-[0_0_15px_rgba(255,255,255,0.1)] mb-4 !w-12 !h-12 flex items-center justify-center`}>
+          <span className="material-symbols-outlined text-2xl drop-shadow-md">{icon}</span>
+        </div>
+        
+        <p className="text-on-surface-variant text-[11px] font-bold uppercase tracking-[0.15em] mb-1.5 opacity-80">{label}</p>
+        
+        {value === null ? (
+          <div className="skeleton h-10 w-24 mt-1 rounded-lg" />
+        ) : (
+          <h3 className="text-4xl font-black text-white tracking-tighter drop-shadow-lg">{value}</h3>
+        )}
+
+        {progressValue !== undefined && (
+          <div className="progress-bar mt-6 w-full !bg-white/[0.04] border border-white/[0.05] !h-1.5 rounded-full overflow-hidden">
+            <div className="h-full shadow-[0_0_10px_currentColor] relative rounded-full" style={{ width: `${Math.min(progressValue, 100)}%`, background: iconClass.includes('primary') ? '#bfc2ff' : iconClass.includes('danger') ? '#ff5540' : iconClass.includes('warning') ? '#e9c400' : '#4ade80', color: iconClass.includes('primary') ? '#bfc2ff' : iconClass.includes('danger') ? '#ff5540' : iconClass.includes('warning') ? '#e9c400' : '#4ade80' }}>
+              <div className="absolute inset-0 bg-white/40 w-full h-full" style={{ clipPath: 'polygon(0 0, 100% 0, 80% 100%, 0% 100%)' }} />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BranchBar({ name, color, members, total }: { name: string; color: string; members: number; total: number }) {
+  const pct = total > 0 ? Math.round((members / total) * 100) : 0;
+  return (
+    <div className="group">
+      <div className="flex justify-between items-center text-sm mb-2.5">
+        <span className="font-semibold text-white flex items-center gap-2.5">
+          <span className={`w-2.5 h-2.5 rounded-sm ${color} shadow-[0_0_8px_rgba(255,255,255,0.2)]`} />
+          {name}
+        </span>
+        <span className="font-bold text-white/80 bg-white/[0.04] px-2.5 py-1 rounded-md border border-white/[0.05] text-xs">{members}/{total} seats</span>
+      </div>
+      <div className="progress-bar !h-2.5 !bg-white/[0.02] border border-white/[0.05]">
+        <div className={`progress-bar-fill ${color} shadow-lg relative`} style={{ width: `${pct}%` }}>
+           <div className="absolute inset-0 bg-white/20 w-full h-full" style={{ clipPath: 'polygon(0 0, 100% 0, 80% 100%, 0% 100%)' }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuickAction({ href, icon, label, color }: { href: string; icon: string; label: string; color: string }) {
+  return (
+    <Link href={href} className="glass-pane-elevated !p-5 hover:!bg-white/[0.04] hover:!border-white/[0.15] text-center transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.4)] group cursor-pointer flex flex-col items-center justify-center gap-3">
+      <span className={`material-symbols-outlined text-3xl block ${color} group-hover:scale-110 group-hover:-translate-y-1 transition-all drop-shadow-lg`}>{icon}</span>
+      <div className="text-white/90 font-bold text-xs tracking-wider uppercase">{label}</div>
+    </Link>
   );
 }

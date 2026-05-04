@@ -74,8 +74,8 @@ const getBranchData = (occupancy: Record<string, number>): Record<BranchId, Bran
     image: '/assets/exterior.jpg',
     address: '2nd Floor, Zenith Plaza, Namnakala, Ambikapur.',
     colors: {
-      gradient: 'from-emerald-600 to-teal-900',
-      glow: 'bg-emerald-500',
+      gradient: 'from-orange-600 to-amber-900',
+      glow: 'bg-orange-500',
       ring: '',
     },
     features: [
@@ -147,7 +147,7 @@ const BackgroundGradient = ({ isLeft }: { isLeft: boolean }) => (
       animate={{
         background: isLeft
           ? 'radial-gradient(circle at 0% 50%, rgba(59, 130, 246, 0.1), transparent 50%)'
-          : 'radial-gradient(circle at 100% 50%, rgba(16, 185, 129, 0.1), transparent 50%)',
+          : 'radial-gradient(circle at 100% 50%, rgba(249, 115, 22, 0.1), transparent 50%)',
       }}
       transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
       className="absolute inset-0"
@@ -208,7 +208,9 @@ const ProductVisual = ({ data, isLeft }: { data: BranchData; isLeft: boolean }) 
 const ProductDetails = ({ data, isLeft }: { data: BranchData; isLeft: boolean }) => {
   const alignClass = isLeft ? 'items-start text-left' : 'items-end text-right';
   const flexDirClass = isLeft ? 'flex-row' : 'flex-row-reverse';
-  const barColorClass = isLeft ? 'left-0 bg-blue-500' : 'right-0 bg-emerald-500';
+  const barColorClass = isLeft ? 'left-0 bg-blue-500' : 'right-0 bg-orange-500';
+  const textColorClass = isLeft ? 'text-primary' : 'text-orange-500';
+  const bgColorClass = isLeft ? 'bg-primary text-on-primary' : 'bg-orange-600 text-white';
 
   return (
     <motion.div
@@ -218,7 +220,7 @@ const ProductDetails = ({ data, isLeft }: { data: BranchData; isLeft: boolean })
       exit="exit"
       className={`flex flex-col ${alignClass}`}
     >
-      <motion.h2 variants={ANIMATIONS.item} className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-3 italic">
+      <motion.h2 variants={ANIMATIONS.item} className={`text-[10px] font-black uppercase tracking-[0.3em] mb-3 italic ${textColorClass}`}>
         {data.label}
       </motion.h2>
       <motion.h1 variants={ANIMATIONS.item} className="text-4xl md:text-6xl font-black tracking-tighter mb-4 text-white uppercase font-manrope">
@@ -234,7 +236,7 @@ const ProductDetails = ({ data, isLeft }: { data: BranchData; isLeft: boolean })
           <div key={feature.label} className="group">
             <div className={`flex items-center justify-between mb-3 text-xs ${flexDirClass}`}>
               <div className={`flex items-center gap-3 ${feature.value > 50 ? 'text-white' : 'text-white/60'}`}>
-                <feature.icon size={16} className="text-primary" /> <span className="font-black uppercase tracking-widest">{feature.label}</span>
+                <feature.icon size={16} className={textColorClass} /> <span className="font-black uppercase tracking-widest">{feature.label}</span>
               </div>
               <span className="font-mono text-[10px] text-white/30 font-bold">{feature.value}%</span>
             </div>
@@ -251,7 +253,7 @@ const ProductDetails = ({ data, isLeft }: { data: BranchData; isLeft: boolean })
 
         <div className={`pt-4 flex ${isLeft ? 'justify-start' : 'justify-end'}`}>
           <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 group">
-             <MapPin size={14} className="text-primary" />
+             <MapPin size={14} className={textColorClass} />
              {data.address}
           </div>
         </div>
@@ -259,7 +261,7 @@ const ProductDetails = ({ data, isLeft }: { data: BranchData; isLeft: boolean })
 
       {/* Action */}
       <motion.div variants={ANIMATIONS.item} className={`mt-8 flex items-center gap-6 ${flexDirClass}`}>
-        <a href="#enquiry" className="bg-primary text-on-primary px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl">
+        <a href="#enquiry" className={`${bgColorClass} px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl`}>
            Book My Seat
         </a>
         <a href="#gallery" className="text-white/40 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest">
@@ -294,11 +296,11 @@ const Switcher = ({
             {activeId === opt.id && (
               <motion.div
                 layoutId="island-surface"
-                className="absolute inset-0 rounded-full bg-primary/20"
+                className={`absolute inset-0 rounded-full ${opt.id === 'namnakala' ? 'bg-orange-500/20' : 'bg-primary/20'}`}
                 transition={{ type: 'spring', stiffness: 220, damping: 22 }}
               />
             )}
-            <span className={`relative z-10 transition-colors duration-300 ${activeId === opt.id ? 'text-white' : 'text-white/40 hover:text-white/60'}`}>
+            <span className={`relative z-10 transition-colors duration-300 ${activeId === opt.id ? (opt.id === 'namnakala' ? 'text-orange-400' : 'text-white') : 'text-white/40 hover:text-white/60'}`}>
               {opt.label}
             </span>
           </motion.button>
@@ -320,7 +322,7 @@ export default function BranchShowcase({ occupancy }: { occupancy: Record<string
   const isLeft = activeSide === 'bengali-chowk';
 
   return (
-    <div className="relative w-full py-20 overflow-hidden selection:bg-primary/30">
+    <div className="relative w-full py-20 overflow-hidden selection:bg-primary/30 glass-pane-elevated rounded-[48px] max-w-[95vw] xl:max-w-7xl mx-auto shadow-2xl border border-white/5">
       
       <BackgroundGradient isLeft={isLeft} />
 
